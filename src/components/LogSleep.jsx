@@ -17,6 +17,7 @@ export default function LogSleep({ child }) {
 
   useEffect(() => {
     loadActiveSleep();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child]);
 
   const loadActiveSleep = async () => {

@@ -15,12 +15,12 @@ export default function ChildProfileSetup({ onChildCreated }) {
     setError('');
 
     if (!formData.name.trim()) {
-      setError('Please enter your child\'s name');
+      setError('Please enter your child&apos;s name');
       return;
     }
 
     if (!formData.dateOfBirth) {
-      setError('Please select your child\'s date of birth');
+      setError('Please select your child&apos;s date of birth');
       return;
     }
 
@@ -48,13 +48,13 @@ export default function ChildProfileSetup({ onChildCreated }) {
             <Baby className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to TinyTally</h1>
-          <p className="text-gray-600">Let's set up your child's profile</p>
+          <p className="text-gray-600">Let&apos;s set up your child&apos;s profile</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Child's Name
+              Child&apos;s Name
             </label>
             <input
               type="text"

@@ -17,6 +17,7 @@ export default function Dashboard({ child }) {
 
   useEffect(() => {
     loadDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child]);
 
   const loadDashboardData = async () => {
@@ -245,7 +246,7 @@ export default function Dashboard({ child }) {
 
         {/* Today's Events */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Today's Activity</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Today&apos;s Activity</h2>
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>

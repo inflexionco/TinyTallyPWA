@@ -227,7 +227,7 @@ export default function Settings({ child, onChildUpdated }) {
             <p><strong>Version:</strong> 1.0.0</p>
             <p>
               TinyTally is a Progressive Web App (PWA) designed to help parents track their
-              child's daily activities including feeding, diaper changes, and sleep patterns.
+              child&apos;s daily activities including feeding, diaper changes, and sleep patterns.
             </p>
             <p className="mt-4 text-xs text-gray-500">
               Built with React, Tailwind CSS, and IndexedDB

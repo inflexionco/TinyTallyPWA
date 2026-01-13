@@ -14,6 +14,7 @@ export default function History({ child }) {
 
   useEffect(() => {
     loadHistoryData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child, selectedDate]);
 
   const loadHistoryData = async () => {
