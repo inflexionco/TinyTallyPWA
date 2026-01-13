@@ -32,11 +32,17 @@
   }
 
   .btn-quick-log {
-    @apply bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-3 active:scale-95 transition-all duration-150 border-2 border-transparent;
+    @apply bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center gap-3 active:scale-95 transition-all duration-150 border-2 border-transparent min-h-[120px];
   }
 
   .btn-quick-log:active {
     @apply border-blue-400;
+  }
+
+  @media (min-width: 640px) {
+    .btn-quick-log {
+      @apply min-h-[140px] p-8;
+    }
   }
 
   /* Input Styles */
@@ -50,18 +56,37 @@
 
   /* Card Styles */
   .card {
-    @apply bg-white rounded-2xl shadow-lg p-6;
+    @apply bg-white rounded-2xl shadow-lg p-6 w-full;
+  }
+
+  @media (min-width: 640px) {
+    .card {
+      @apply p-8;
+    }
   }
 
   .event-card {
-    @apply bg-white rounded-xl shadow-sm p-4 border-l-4;
+    @apply bg-white rounded-xl shadow-sm p-4 border-l-4 w-full;
   }
 
   /* Container */
   .container-safe {
-    @apply max-w-2xl mx-auto px-4 pb-20;
+    @apply max-w-lg mx-auto px-4 pb-20;
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .container-safe {
+      @apply max-w-xl;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .container-safe {
+      @apply max-w-2xl;
+    }
   }
 
   /* Tab Buttons */

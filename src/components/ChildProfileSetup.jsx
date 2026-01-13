@@ -42,7 +42,7 @@ export default function ChildProfileSetup({ onChildCreated }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-500 rounded-full mb-4">
             <Baby className="w-10 h-10 text-white" />
