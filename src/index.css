@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-blue-50 text-gray-900;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+
+  input, button, textarea, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+}
+
+@layer components {
+  /* Button Styles */
+  .btn-primary {
+    @apply bg-blue-500 text-white font-semibold py-3 px-6 rounded-xl shadow-md active:scale-95 transition-transform duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-gray-700 font-semibold py-3 px-6 rounded-xl shadow-sm border border-gray-200 active:scale-95 transition-transform duration-150;
+  }
+
+  .btn-quick-log {
+    @apply bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center gap-3 active:scale-95 transition-all duration-150 border-2 border-transparent;
+  }
+
+  .btn-quick-log:active {
+    @apply border-blue-400;
+  }
+
+  /* Input Styles */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none bg-white text-base;
+  }
+
+  .select-field {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-blue-400 focus:outline-none bg-white text-base appearance-none;
+  }
+
+  /* Card Styles */
+  .card {
+    @apply bg-white rounded-2xl shadow-lg p-6;
+  }
+
+  .event-card {
+    @apply bg-white rounded-xl shadow-sm p-4 border-l-4;
+  }
+
+  /* Container */
+  .container-safe {
+    @apply max-w-2xl mx-auto px-4 pb-20;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+  }
+
+  /* Tab Buttons */
+  .tab-button {
+    @apply px-6 py-2 rounded-full font-medium transition-all duration-200;
+  }
+
+  .tab-button-active {
+    @apply bg-blue-500 text-white shadow-md;
+  }
+
+  .tab-button-inactive {
+    @apply bg-white text-gray-600 hover:bg-gray-50;
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-feed {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  .badge-diaper {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .badge-sleep {
+    @apply bg-purple-100 text-purple-700;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .touch-action-none {
+    touch-action: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

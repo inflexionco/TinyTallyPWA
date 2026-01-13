@@ -1,0 +1,287 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Clock, Baby } from 'lucide-react';
+import { feedService } from '../services/db';
+
+export default function LogFeed({ child }) {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    type: 'breastfeeding-left',
+    timestamp: new Date().toISOString().slice(0, 16),
+    duration: '',
+    amount: '',
+    unit: 'oz',
+    notes: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTimerMode, setIsTimerMode] = useState(false);
+  const [timerStartTime, setTimerStartTime] = useState(null);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (isTimerMode && timerStartTime) {
+      interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+        setTimerSeconds(elapsed);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerMode, timerStartTime]);
+
+  const startTimer = () => {
+    setIsTimerMode(true);
+    setTimerStartTime(Date.now());
+    setTimerSeconds(0);
+  };
+
+  const stopTimer = () => {
+    const minutes = Math.floor(timerSeconds / 60);
+    setFormData({ ...formData, duration: minutes.toString() });
+    setIsTimerMode(false);
+    setTimerStartTime(null);
+    setTimerSeconds(0);
+  };
+
+  const formatTimerDisplay = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const feedData = {
+        childId: child.id,
+        timestamp: new Date(formData.timestamp),
+        type: formData.type,
+        notes: formData.notes
+      };
+
+      // Add duration or amount based on feed type
+      if (formData.type.startsWith('breastfeeding')) {
+        feedData.duration = parseInt(formData.duration) || 0;
+      } else {
+        feedData.amount = parseFloat(formData.amount) || 0;
+        feedData.unit = formData.unit;
+      }
+
+      await feedService.addFeed(feedData);
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging feed:', error);
+      alert('Failed to log feed. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const isBreastfeeding = formData.type.startsWith('breastfeeding');
+
+  return (
+    <div className="min-h-screen bg-blue-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white safe-top">
+        <div className="container-safe pt-4 pb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => navigate('/')}
+              className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3">
+              <Baby className="w-6 h-6" />
+              <h1 className="text-xl font-bold">Log Feed</h1>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="container-safe py-6">
+        <form onSubmit={handleSubmit} className="card space-y-6">
+          {/* Feed Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Feed Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, type: 'breastfeeding-left' })}
+                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                  formData.type === 'breastfeeding-left'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700'
+                }`}
+              >
+                Breast (Left)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, type: 'breastfeeding-right' })}
+                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                  formData.type === 'breastfeeding-right'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700'
+                }`}
+              >
+                Breast (Right)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, type: 'formula' })}
+                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                  formData.type === 'formula'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700'
+                }`}
+              >
+                Formula
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, type: 'pumped' })}
+                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                  formData.type === 'pumped'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-700'
+                }`}
+              >
+                Pumped Milk
+              </button>
+            </div>
+          </div>
+
+          {/* Timestamp */}
+          <div>
+            <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-2">
+              <Clock className="w-4 h-4 inline mr-1" />
+              Date & Time
+            </label>
+            <input
+              type="datetime-local"
+              id="timestamp"
+              value={formData.timestamp}
+              onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
+              className="input-field"
+              required
+            />
+          </div>
+
+          {/* Duration (for breastfeeding) */}
+          {isBreastfeeding && (
+            <div>
+              <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-2">
+                Duration (minutes)
+              </label>
+
+              {!isTimerMode ? (
+                <>
+                  <input
+                    type="number"
+                    id="duration"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    className="input-field"
+                    placeholder="Enter duration in minutes"
+                    min="0"
+                    step="1"
+                  />
+                  <button
+                    type="button"
+                    onClick={startTimer}
+                    className="btn-secondary w-full mt-3"
+                  >
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Use Timer
+                  </button>
+                </>
+              ) : (
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-center">
+                  <div className="text-4xl font-bold text-blue-600 mb-4">
+                    {formatTimerDisplay(timerSeconds)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={stopTimer}
+                    className="btn-primary"
+                  >
+                    Stop Timer
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Amount (for formula/pumped) */}
+          {!isBreastfeeding && (
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+                Amount
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  id="amount"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  className="input-field flex-1"
+                  placeholder="Enter amount"
+                  min="0"
+                  step="0.5"
+                  required
+                />
+                <select
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  className="select-field w-24"
+                >
+                  <option value="oz">oz</option>
+                  <option value="ml">ml</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+              Notes (Optional)
+            </label>
+            <textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="input-field resize-none"
+              rows="3"
+              placeholder="Add any additional notes..."
+            />
+          </div>
+
+          {/* Submit Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="btn-secondary flex-1"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary flex-1"
+              disabled={isSubmitting || isTimerMode}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Feed'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
