@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Droplet } from 'lucide-react';
 import { diaperService } from '../services/db';
 
 export default function LogDiaper({ child }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id');
   const [formData, setFormData] = useState({
     type: 'wet',
     timestamp: new Date().toISOString().slice(0, 16),
@@ -15,6 +17,36 @@ export default function LogDiaper({ child }) {
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(!!editId);
+
+  useEffect(() => {
+    if (editId) {
+      loadDiaperData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
+  const loadDiaperData = async () => {
+    try {
+      const diaper = await diaperService.getDiaper(parseInt(editId));
+      if (diaper) {
+        setFormData({
+          type: diaper.type,
+          timestamp: new Date(diaper.timestamp).toISOString().slice(0, 16),
+          wetness: diaper.wetness || '',
+          consistency: diaper.consistency || '',
+          color: diaper.color || '',
+          quantity: diaper.quantity || '',
+          notes: diaper.notes || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading diaper:', error);
+      alert('Failed to load diaper data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,17 +72,32 @@ export default function LogDiaper({ child }) {
         diaperData.quantity = formData.quantity || 'medium';
       }
 
-      await diaperService.addDiaper(diaperData);
+      if (editId) {
+        await diaperService.updateDiaper(parseInt(editId), diaperData);
+      } else {
+        await diaperService.addDiaper(diaperData);
+      }
       navigate('/');
     } catch (error) {
-      console.error('Error logging diaper:', error);
-      alert('Failed to log diaper change. Please try again.');
+      console.error('Error saving diaper:', error);
+      alert('Failed to save diaper change. Please try again.');
       setIsSubmitting(false);
     }
   };
 
   const showWetFields = formData.type === 'wet' || formData.type === 'both';
   const showDirtyFields = formData.type === 'dirty' || formData.type === 'both';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading diaper data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -66,7 +113,7 @@ export default function LogDiaper({ child }) {
             </button>
             <div className="flex items-center gap-3">
               <Droplet className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Log Diaper</h1>
+              <h1 className="text-xl font-bold">{editId ? 'Edit Diaper' : 'Log Diaper'}</h1>
             </div>
           </div>
         </div>
@@ -262,7 +309,7 @@ export default function LogDiaper({ child }) {
               className="btn-primary flex-1"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save Diaper'}
+              {isSubmitting ? 'Saving...' : editId ? 'Update Diaper' : 'Save Diaper'}
             </button>
           </div>
         </form>

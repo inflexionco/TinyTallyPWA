@@ -1,9 +1,11 @@
-import { Baby, Droplet, Moon, Scale, Trash2 } from 'lucide-react';
+import { Baby, Droplet, Moon, Scale, Trash2, Edit2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService } from '../services/db';
 import { useState } from 'react';
 
 export default function EventList({ events, onRefresh }) {
+  const navigate = useNavigate();
   const [deletingId, setDeletingId] = useState(null);
 
   const getStoolColorClasses = (color) => {
@@ -72,13 +74,23 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <button
-            onClick={() => handleDelete(event)}
-            disabled={deletingId === event.id}
-            className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => navigate(`/log-feed?id=${event.id}`)}
+              className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              disabled={deletingId === event.id}
+              className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -116,13 +128,23 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <button
-            onClick={() => handleDelete(event)}
-            disabled={deletingId === event.id}
-            className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => navigate(`/log-diaper?id=${event.id}`)}
+              className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              disabled={deletingId === event.id}
+              className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -158,13 +180,23 @@ export default function EventList({ events, onRefresh }) {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => handleDelete(event)}
-            disabled={deletingId === event.id}
-            className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => navigate(`/log-sleep?id=${event.id}`)}
+              className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              disabled={deletingId === event.id}
+              className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -189,13 +221,23 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <button
-            onClick={() => handleDelete(event)}
-            disabled={deletingId === event.id}
-            className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => navigate(`/log-weight?id=${event.id}`)}
+              className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              disabled={deletingId === event.id}
+              className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );

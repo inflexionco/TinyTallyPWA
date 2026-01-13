@@ -87,6 +87,10 @@ export const feedService = {
     return feeds.length > 0 ? feeds[0] : null;
   },
 
+  async getFeed(id) {
+    return await db.feeds.get(id);
+  },
+
   async deleteFeed(id) {
     return await db.feeds.delete(id);
   },
@@ -142,6 +146,10 @@ export const diaperService = {
       .sortBy('timestamp');
 
     return diapers.length > 0 ? diapers[0] : null;
+  },
+
+  async getDiaper(id) {
+    return await db.diapers.get(id);
   },
 
   async deleteDiaper(id) {
@@ -209,6 +217,10 @@ export const sleepService = {
     return sleeps.length > 0 ? sleeps[0] : null;
   },
 
+  async getSleepById(id) {
+    return await db.sleep.get(id);
+  },
+
   async endSleep(id, endTime) {
     return await db.sleep.update(id, { endTime: endTime || new Date() });
   },
@@ -265,6 +277,10 @@ export const weightService = {
       .sortBy('timestamp');
 
     return weights.length > 0 ? weights[0] : null;
+  },
+
+  async getWeight(id) {
+    return await db.weight.get(id);
   },
 
   async deleteWeight(id) {

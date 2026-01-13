@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Moon } from 'lucide-react';
 import { sleepService } from '../services/db';
 
 export default function LogSleep({ child }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id');
   const [activeSleep, setActiveSleep] = useState(null);
   const [formData, setFormData] = useState({
     type: 'nap',
@@ -16,9 +18,32 @@ export default function LogSleep({ child }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadActiveSleep();
+    if (editId) {
+      loadSleepData();
+    } else {
+      loadActiveSleep();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [child]);
+  }, [child, editId]);
+
+  const loadSleepData = async () => {
+    try {
+      const sleep = await sleepService.getSleepById(parseInt(editId));
+      if (sleep) {
+        setFormData({
+          type: sleep.type,
+          startTime: new Date(sleep.startTime).toISOString().slice(0, 16),
+          endTime: sleep.endTime ? new Date(sleep.endTime).toISOString().slice(0, 16) : '',
+          notes: sleep.notes || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading sleep:', error);
+      alert('Failed to load sleep data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadActiveSleep = async () => {
     try {
@@ -70,18 +95,24 @@ export default function LogSleep({ child }) {
     setIsSubmitting(true);
 
     try {
-      await sleepService.addSleep({
+      const sleepData = {
         childId: child.id,
         startTime: new Date(formData.startTime),
         endTime: new Date(formData.endTime),
         type: formData.type,
         notes: formData.notes
-      });
+      };
+
+      if (editId) {
+        await sleepService.updateSleep(parseInt(editId), sleepData);
+      } else {
+        await sleepService.addSleep(sleepData);
+      }
 
       navigate('/');
     } catch (error) {
-      console.error('Error logging sleep:', error);
-      alert('Failed to log sleep. Please try again.');
+      console.error('Error saving sleep:', error);
+      alert('Failed to save sleep. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -108,7 +139,7 @@ export default function LogSleep({ child }) {
             </button>
             <div className="flex items-center gap-3">
               <Moon className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Log Sleep</h1>
+              <h1 className="text-xl font-bold">{editId ? 'Edit Sleep' : 'Log Sleep'}</h1>
             </div>
           </div>
         </div>
@@ -116,7 +147,7 @@ export default function LogSleep({ child }) {
 
       <div className="container-safe py-6 space-y-6">
         {/* Active Sleep Tracker */}
-        {activeSleep ? (
+        {!editId && activeSleep ? (
           <div className="card">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -138,7 +169,7 @@ export default function LogSleep({ child }) {
               {isSubmitting ? 'Ending Sleep...' : 'End Sleep'}
             </button>
           </div>
-        ) : (
+        ) : !editId ? (
           <div className="card">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Start Sleep Tracking</h2>
 
@@ -196,12 +227,12 @@ export default function LogSleep({ child }) {
               {isSubmitting ? 'Starting...' : 'Start Sleep Tracking'}
             </button>
           </div>
-        )}
+        ) : null}
 
         {/* Log Past Sleep */}
-        {!activeSleep && (
+        {(!activeSleep || editId) && (
           <div className="card">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Log Past Sleep</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">{editId ? 'Edit Sleep' : 'Log Past Sleep'}</h2>
 
             <form onSubmit={handleSubmitPastSleep} className="space-y-4">
               {/* Sleep Type */}
@@ -297,7 +328,7 @@ export default function LogSleep({ child }) {
                   className="btn-primary flex-1"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Saving...' : 'Save Sleep'}
+                  {isSubmitting ? 'Saving...' : editId ? 'Update Sleep' : 'Save Sleep'}
                 </button>
               </div>
             </form>

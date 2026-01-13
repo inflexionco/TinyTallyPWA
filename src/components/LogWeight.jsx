@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Scale } from 'lucide-react';
 import { weightService } from '../services/db';
 
 export default function LogWeight({ child }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id');
   const [formData, setFormData] = useState({
     timestamp: new Date().toISOString().slice(0, 16),
     weight: '',
@@ -12,6 +14,33 @@ export default function LogWeight({ child }) {
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(!!editId);
+
+  useEffect(() => {
+    if (editId) {
+      loadWeightData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
+  const loadWeightData = async () => {
+    try {
+      const weight = await weightService.getWeight(parseInt(editId));
+      if (weight) {
+        setFormData({
+          timestamp: new Date(weight.timestamp).toISOString().slice(0, 16),
+          weight: weight.weight.toString(),
+          unit: weight.unit,
+          notes: weight.notes || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading weight:', error);
+      alert('Failed to load weight data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,21 +53,38 @@ export default function LogWeight({ child }) {
     setIsSubmitting(true);
 
     try {
-      await weightService.addWeight({
+      const weightData = {
         childId: child.id,
         timestamp: new Date(formData.timestamp),
         weight: parseFloat(formData.weight),
         unit: formData.unit,
         notes: formData.notes
-      });
+      };
+
+      if (editId) {
+        await weightService.updateWeight(parseInt(editId), weightData);
+      } else {
+        await weightService.addWeight(weightData);
+      }
 
       navigate('/');
     } catch (error) {
-      console.error('Error logging weight:', error);
-      alert('Failed to log weight. Please try again.');
+      console.error('Error saving weight:', error);
+      alert('Failed to save weight. Please try again.');
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading weight data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -54,7 +100,7 @@ export default function LogWeight({ child }) {
             </button>
             <div className="flex items-center gap-3">
               <Scale className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Log Weight</h1>
+              <h1 className="text-xl font-bold">{editId ? 'Edit Weight' : 'Log Weight'}</h1>
             </div>
           </div>
         </div>
@@ -153,7 +199,7 @@ export default function LogWeight({ child }) {
               className="btn-primary flex-1"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save Weight'}
+              {isSubmitting ? 'Saving...' : editId ? 'Update Weight' : 'Save Weight'}
             </button>
           </div>
         </form>

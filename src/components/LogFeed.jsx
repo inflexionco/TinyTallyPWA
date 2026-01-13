@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Baby } from 'lucide-react';
 import { feedService } from '../services/db';
 
 export default function LogFeed({ child }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id');
   const [formData, setFormData] = useState({
     type: 'breastfeeding-left',
     timestamp: new Date().toISOString().slice(0, 16),
@@ -17,6 +19,35 @@ export default function LogFeed({ child }) {
   const [isTimerMode, setIsTimerMode] = useState(false);
   const [timerStartTime, setTimerStartTime] = useState(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [loading, setLoading] = useState(!!editId);
+
+  useEffect(() => {
+    if (editId) {
+      loadFeedData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
+  const loadFeedData = async () => {
+    try {
+      const feed = await feedService.getFeed(parseInt(editId));
+      if (feed) {
+        setFormData({
+          type: feed.type,
+          timestamp: new Date(feed.timestamp).toISOString().slice(0, 16),
+          duration: feed.duration?.toString() || '',
+          amount: feed.amount?.toString() || '',
+          unit: feed.unit || 'oz',
+          notes: feed.notes || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading feed:', error);
+      alert('Failed to load feed data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let interval;
@@ -69,16 +100,31 @@ export default function LogFeed({ child }) {
         feedData.unit = formData.unit;
       }
 
-      await feedService.addFeed(feedData);
+      if (editId) {
+        await feedService.updateFeed(parseInt(editId), feedData);
+      } else {
+        await feedService.addFeed(feedData);
+      }
       navigate('/');
     } catch (error) {
-      console.error('Error logging feed:', error);
-      alert('Failed to log feed. Please try again.');
+      console.error('Error saving feed:', error);
+      alert('Failed to save feed. Please try again.');
       setIsSubmitting(false);
     }
   };
 
   const isBreastfeeding = formData.type.startsWith('breastfeeding');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading feed data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -94,7 +140,7 @@ export default function LogFeed({ child }) {
             </button>
             <div className="flex items-center gap-3">
               <Baby className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Log Feed</h1>
+              <h1 className="text-xl font-bold">{editId ? 'Edit Feed' : 'Log Feed'}</h1>
             </div>
           </div>
         </div>
@@ -277,7 +323,7 @@ export default function LogFeed({ child }) {
               className="btn-primary flex-1"
               disabled={isSubmitting || isTimerMode}
             >
-              {isSubmitting ? 'Saving...' : 'Save Feed'}
+              {isSubmitting ? 'Saving...' : editId ? 'Update Feed' : 'Save Feed'}
             </button>
           </div>
         </form>
