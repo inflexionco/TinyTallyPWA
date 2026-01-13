@@ -40,6 +40,7 @@ export default function Settings({ child, onChildUpdated }) {
         feeds: await db.feeds.toArray(),
         diapers: await db.diapers.toArray(),
         sleep: await db.sleep.toArray(),
+        weight: await db.weight.toArray(),
         exportDate: new Date().toISOString()
       };
 
@@ -64,7 +65,7 @@ export default function Settings({ child, onChildUpdated }) {
       return;
     }
 
-    if (!confirm('This will permanently delete all feeds, diapers, and sleep records. Are you absolutely sure?')) {
+    if (!confirm('This will permanently delete all feeds, diapers, sleep, and weight records. Are you absolutely sure?')) {
       return;
     }
 
@@ -72,6 +73,7 @@ export default function Settings({ child, onChildUpdated }) {
       await db.feeds.clear();
       await db.diapers.clear();
       await db.sleep.clear();
+      await db.weight.clear();
       alert('All activity data has been cleared.');
       navigate('/');
     } catch (error) {

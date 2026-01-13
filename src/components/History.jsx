@@ -27,7 +27,8 @@ export default function History({ child }) {
       const allEvents = [
         ...statsData.feeds.map(f => ({ ...f, eventType: 'feed' })),
         ...statsData.diapers.map(d => ({ ...d, eventType: 'diaper' })),
-        ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' }))
+        ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' })),
+        ...statsData.weights.map(w => ({ ...w, eventType: 'weight' }))
       ].sort((a, b) => {
         const timeA = a.timestamp || a.startTime;
         const timeB = b.timestamp || b.startTime;

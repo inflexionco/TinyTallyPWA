@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Baby, Droplet, Moon, History, Settings, RefreshCw } from 'lucide-react';
-import { feedService, diaperService, sleepService, statsService } from '../services/db';
+import { Baby, Droplet, Moon, Scale, History, Settings, RefreshCw } from 'lucide-react';
+import { feedService, diaperService, sleepService, weightService, statsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
 
@@ -12,6 +12,7 @@ export default function Dashboard({ child }) {
   const [lastFeed, setLastFeed] = useState(null);
   const [lastDiaper, setLastDiaper] = useState(null);
   const [lastSleep, setLastSleep] = useState(null);
+  const [lastWeight, setLastWeight] = useState(null);
   const [activeSleep, setActiveSleep] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,11 +24,12 @@ export default function Dashboard({ child }) {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, lastFeedData, lastDiaperData, lastSleepData, activeSleepData] = await Promise.all([
+      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, activeSleepData] = await Promise.all([
         statsService.getDailyStats(child.id, new Date()),
         feedService.getLastFeed(child.id),
         diaperService.getLastDiaper(child.id),
         sleepService.getLastSleep(child.id),
+        weightService.getLastWeight(child.id),
         sleepService.getActiveSleep(child.id)
       ]);
 
@@ -35,13 +37,15 @@ export default function Dashboard({ child }) {
       setLastFeed(lastFeedData);
       setLastDiaper(lastDiaperData);
       setLastSleep(lastSleepData);
+      setLastWeight(lastWeightData);
       setActiveSleep(activeSleepData);
 
       // Combine all events and sort by time
       const allEvents = [
         ...statsData.feeds.map(f => ({ ...f, eventType: 'feed' })),
         ...statsData.diapers.map(d => ({ ...d, eventType: 'diaper' })),
-        ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' }))
+        ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' })),
+        ...statsData.weights.map(w => ({ ...w, eventType: 'weight' }))
       ].sort((a, b) => {
         const timeA = a.timestamp || a.startTime;
         const timeB = b.timestamp || b.startTime;
@@ -129,7 +133,7 @@ export default function Dashboard({ child }) {
 
       <div className="container-safe py-6">
         {/* Quick Log Buttons */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <button
             onClick={() => navigate('/log-feed')}
             className="btn-quick-log"
@@ -152,6 +156,14 @@ export default function Dashboard({ child }) {
           >
             <Moon className="w-8 h-8 text-purple-500" />
             <span className="text-sm font-semibold text-gray-700">Sleep</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/log-weight')}
+            className="btn-quick-log"
+          >
+            <Scale className="w-8 h-8 text-orange-500" />
+            <span className="text-sm font-semibold text-gray-700">Weight</span>
           </button>
         </div>
 
@@ -238,6 +250,30 @@ export default function Dashboard({ child }) {
                 </div>
                 <div className="text-xs text-gray-500">
                   {formatTimeAgo((activeSleep || lastSleep).startTime)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {lastWeight && (
+            <div className="flex items-center justify-between py-2 border-t border-gray-100">
+              <div className="flex items-center gap-3">
+                <Scale className="w-5 h-5 text-orange-500" />
+                <div>
+                  <div className="font-medium text-gray-900">
+                    Weight Recorded
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {lastWeight.weight} {lastWeight.unit}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-medium text-gray-900">
+                  {formatTime(lastWeight.timestamp)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {formatTimeAgo(lastWeight.timestamp)}
                 </div>
               </div>
             </div>

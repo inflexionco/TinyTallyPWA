@@ -11,6 +11,15 @@ db.version(1).stores({
   sleep: '++id, childId, startTime, endTime, type, notes'
 });
 
+// Version 2: Add weight tracking
+db.version(2).stores({
+  child: '++id, name, dateOfBirth',
+  feeds: '++id, childId, timestamp, type, duration, amount, unit, notes',
+  diapers: '++id, childId, timestamp, type, wetness, consistency, color, quantity, notes',
+  sleep: '++id, childId, startTime, endTime, type, notes',
+  weight: '++id, childId, timestamp, weight, unit, notes'
+});
+
 // Child Profile Service
 export const childService = {
   async getChild() {
@@ -213,6 +222,60 @@ export const sleepService = {
   }
 };
 
+// Weight Tracking Service
+export const weightService = {
+  async addWeight(weightData) {
+    return await db.weight.add({
+      childId: weightData.childId || 1,
+      timestamp: weightData.timestamp || new Date(),
+      weight: weightData.weight, // numeric value
+      unit: weightData.unit || 'kg', // 'kg' or 'lbs'
+      notes: weightData.notes || '',
+      createdAt: new Date()
+    });
+  },
+
+  async getWeights(childId, startDate, endDate) {
+    let query = db.weight.where('childId').equals(childId || 1);
+
+    if (startDate && endDate) {
+      return await query
+        .filter(weight => weight.timestamp >= startDate && weight.timestamp <= endDate)
+        .reverse()
+        .sortBy('timestamp');
+    }
+
+    return await query.reverse().sortBy('timestamp');
+  },
+
+  async getTodayWeights(childId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return await this.getWeights(childId, today, tomorrow);
+  },
+
+  async getLastWeight(childId) {
+    const weights = await db.weight
+      .where('childId')
+      .equals(childId || 1)
+      .reverse()
+      .sortBy('timestamp');
+
+    return weights.length > 0 ? weights[0] : null;
+  },
+
+  async deleteWeight(id) {
+    return await db.weight.delete(id);
+  },
+
+  async updateWeight(id, weightData) {
+    return await db.weight.update(id, weightData);
+  }
+};
+
 // Stats Service for Dashboard
 export const statsService = {
   async getDailyStats(childId, date) {
@@ -224,6 +287,7 @@ export const statsService = {
     const feeds = await feedService.getFeeds(childId, startDate, endDate);
     const diapers = await diaperService.getDiapers(childId, startDate, endDate);
     const sleeps = await sleepService.getSleep(childId, startDate, endDate);
+    const weights = await weightService.getWeights(childId, startDate, endDate);
 
     // Calculate total sleep duration
     const totalSleepMinutes = sleeps.reduce((total, sleep) => {
@@ -245,9 +309,11 @@ export const statsService = {
       dirtyDiapers,
       totalSleeps: sleeps.length,
       totalSleepHours: (totalSleepMinutes / 60).toFixed(1),
+      totalWeights: weights.length,
       feeds,
       diapers,
-      sleeps
+      sleeps,
+      weights
     };
   }
 };
