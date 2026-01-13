@@ -43,9 +43,9 @@ export default function EventList({ events, onRefresh }) {
 
     return (
       <div className="event-card border-blue-400">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Baby className="w-5 h-5 text-blue-500 mt-1 flex-shrink-0" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Baby className="w-5 h-5 text-blue-500 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-gray-900">{typeLabels[event.type]}</span>
@@ -66,7 +66,7 @@ export default function EventList({ events, onRefresh }) {
             disabled={deletingId === event.id}
             className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -78,9 +78,9 @@ export default function EventList({ events, onRefresh }) {
 
     return (
       <div className="event-card border-green-400">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Droplet className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Droplet className="w-5 h-5 text-green-500 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-gray-900 capitalize">{typeLabel} Diaper</span>
@@ -110,7 +110,7 @@ export default function EventList({ events, onRefresh }) {
             disabled={deletingId === event.id}
             className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -126,13 +126,13 @@ export default function EventList({ events, onRefresh }) {
 
     return (
       <div className="event-card border-purple-400">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Moon className="w-5 h-5 text-purple-500 mt-1 flex-shrink-0" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Moon className="w-5 h-5 text-purple-500 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-gray-900">{typeLabel}</span>
-                {duration ? (
+                {event.endTime ? (
                   <span className="badge badge-sleep">{formatDuration(duration)}</span>
                 ) : (
                   <span className="badge bg-yellow-100 text-yellow-700">In Progress</span>
@@ -152,7 +152,7 @@ export default function EventList({ events, onRefresh }) {
             disabled={deletingId === event.id}
             className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -162,9 +162,9 @@ export default function EventList({ events, onRefresh }) {
   const renderWeightEvent = (event) => {
     return (
       <div className="event-card border-orange-400">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Scale className="w-5 h-5 text-orange-500 mt-1 flex-shrink-0" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Scale className="w-5 h-5 text-orange-500 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-gray-900">Weight Recorded</span>
@@ -183,7 +183,7 @@ export default function EventList({ events, onRefresh }) {
             disabled={deletingId === event.id}
             className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5" />
           </button>
         </div>
       </div>

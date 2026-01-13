@@ -78,7 +78,7 @@ export default function Dashboard({ child }) {
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white safe-top">
-        <div className="container-safe pt-4">
+        <div className="container-safe pt-2">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -113,7 +113,7 @@ export default function Dashboard({ child }) {
 
           {/* Today's Stats */}
           {stats && (
-            <div className="grid grid-cols-3 gap-3 pb-4">
+            <div className="grid grid-cols-3 gap-3 pb-2">
               <div className="bg-white/20 rounded-xl p-3 text-center">
                 <div className="text-2xl font-bold">{stats.totalFeeds}</div>
                 <div className="text-xs text-blue-100">Feeds</div>
