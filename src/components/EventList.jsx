@@ -6,6 +6,17 @@ import { useState } from 'react';
 export default function EventList({ events, onRefresh }) {
   const [deletingId, setDeletingId] = useState(null);
 
+  const getStoolColorClasses = (color) => {
+    const colorMap = {
+      yellow: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+      green: 'bg-green-100 text-green-800 border border-green-200',
+      brown: 'bg-amber-700 text-amber-50 border border-amber-800',
+      black: 'bg-gray-800 text-gray-100 border border-gray-900',
+      red: 'bg-red-100 text-red-800 border border-red-200'
+    };
+    return colorMap[color] || 'bg-gray-100 text-gray-700 border border-gray-200';
+  };
+
   const handleDelete = async (event) => {
     if (!confirm('Are you sure you want to delete this entry?')) {
       return;
@@ -93,7 +104,7 @@ export default function EventList({ events, onRefresh }) {
                   <span className="badge badge-diaper capitalize">{event.consistency}</span>
                 )}
                 {event.color && (
-                  <span className="badge badge-diaper capitalize">{event.color}</span>
+                  <span className={`badge capitalize ${getStoolColorClasses(event.color)}`}>{event.color}</span>
                 )}
                 {event.quantity && (
                   <span className="badge badge-diaper capitalize">{event.quantity}</span>
