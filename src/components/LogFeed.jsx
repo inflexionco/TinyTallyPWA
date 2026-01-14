@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Baby } from 'lucide-react';
 import { feedService } from '../services/db';
+import {
+  INPUT_LIMITS,
+  sanitizeTextInput,
+  parsePositiveInt,
+  parsePositiveFloat,
+  isFutureDate
+} from '../utils/inputValidation';
 
 export default function LogFeed({ child }) {
   const navigate = useNavigate();
@@ -82,6 +89,13 @@ export default function LogFeed({ child }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate timestamp is not in the future
+    if (isFutureDate(formData.timestamp)) {
+      alert('Feed time cannot be in the future');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -89,14 +103,14 @@ export default function LogFeed({ child }) {
         childId: child.id,
         timestamp: new Date(formData.timestamp),
         type: formData.type,
-        notes: formData.notes
+        notes: sanitizeTextInput(formData.notes)
       };
 
       // Add duration or amount based on feed type
       if (formData.type.startsWith('breastfeeding')) {
-        feedData.duration = parseInt(formData.duration) || 0;
+        feedData.duration = parsePositiveInt(formData.duration, INPUT_LIMITS.DURATION_MAX);
       } else {
-        feedData.amount = parseFloat(formData.amount) || 0;
+        feedData.amount = parsePositiveFloat(formData.amount, INPUT_LIMITS.AMOUNT_MAX);
         feedData.unit = formData.unit;
       }
 
@@ -214,6 +228,7 @@ export default function LogFeed({ child }) {
               value={formData.timestamp}
               onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
               className="input-field"
+              max={new Date().toISOString().slice(0, 16)}
               required
             />
           </div>
@@ -235,6 +250,7 @@ export default function LogFeed({ child }) {
                     className="input-field"
                     placeholder="Enter duration in minutes"
                     min="0"
+                    max={INPUT_LIMITS.DURATION_MAX}
                     step="1"
                   />
                   <button
@@ -278,6 +294,7 @@ export default function LogFeed({ child }) {
                   className="input-field flex-1"
                   placeholder="Enter amount"
                   min="0"
+                  max={INPUT_LIMITS.AMOUNT_MAX}
                   step="0.5"
                   required
                 />
@@ -304,6 +321,7 @@ export default function LogFeed({ child }) {
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="input-field resize-none"
               rows="3"
+              maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
               placeholder="Add any additional notes..."
             />
           </div>

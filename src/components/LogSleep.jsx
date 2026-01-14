@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Moon } from 'lucide-react';
 import { sleepService } from '../services/db';
+import { INPUT_LIMITS, sanitizeTextInput, isFutureDate, isValidTimeRange } from '../utils/inputValidation';
 
 export default function LogSleep({ child }) {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export default function LogSleep({ child }) {
         childId: child.id,
         startTime: new Date(),
         type: formData.type,
-        notes: formData.notes
+        notes: sanitizeTextInput(formData.notes)
       });
 
       await loadActiveSleep();
@@ -92,6 +93,25 @@ export default function LogSleep({ child }) {
 
   const handleSubmitPastSleep = async (e) => {
     e.preventDefault();
+
+    // Validate start time is not in the future
+    if (isFutureDate(formData.startTime)) {
+      alert('Sleep start time cannot be in the future');
+      return;
+    }
+
+    // Validate end time is not in the future
+    if (isFutureDate(formData.endTime)) {
+      alert('Sleep end time cannot be in the future');
+      return;
+    }
+
+    // Validate end time is after start time
+    if (!isValidTimeRange(formData.startTime, formData.endTime)) {
+      alert('Sleep end time must be after start time');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -100,7 +120,7 @@ export default function LogSleep({ child }) {
         startTime: new Date(formData.startTime),
         endTime: new Date(formData.endTime),
         type: formData.type,
-        notes: formData.notes
+        notes: sanitizeTextInput(formData.notes)
       };
 
       if (editId) {
@@ -215,6 +235,7 @@ export default function LogSleep({ child }) {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 className="input-field resize-none"
                 rows="2"
+                maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
                 placeholder="Add any notes..."
               />
             </div>
@@ -278,6 +299,7 @@ export default function LogSleep({ child }) {
                   value={formData.startTime}
                   onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                   className="input-field"
+                  max={new Date().toISOString().slice(0, 16)}
                   required
                 />
               </div>
@@ -294,6 +316,7 @@ export default function LogSleep({ child }) {
                   value={formData.endTime}
                   onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                   className="input-field"
+                  max={new Date().toISOString().slice(0, 16)}
                   required
                 />
               </div>
@@ -309,6 +332,7 @@ export default function LogSleep({ child }) {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className="input-field resize-none"
                   rows="2"
+                  maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
                   placeholder="Add any notes..."
                 />
               </div>

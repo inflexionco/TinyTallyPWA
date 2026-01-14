@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Baby } from 'lucide-react';
 import { childService } from '../services/db';
+import { sanitizeName, isValidDate, INPUT_LIMITS } from '../utils/inputValidation';
 
 export default function ChildProfileSetup({ onChildCreated }) {
   const [formData, setFormData] = useState({
@@ -14,13 +15,15 @@ export default function ChildProfileSetup({ onChildCreated }) {
     e.preventDefault();
     setError('');
 
-    if (!formData.name.trim()) {
-      setError('Please enter your child&apos;s name');
+    const sanitizedName = sanitizeName(formData.name);
+
+    if (!sanitizedName) {
+      setError('Please enter your child\'s name');
       return;
     }
 
-    if (!formData.dateOfBirth) {
-      setError('Please select your child&apos;s date of birth');
+    if (!formData.dateOfBirth || !isValidDate(formData.dateOfBirth)) {
+      setError('Please select a valid date of birth');
       return;
     }
 
@@ -28,7 +31,7 @@ export default function ChildProfileSetup({ onChildCreated }) {
 
     try {
       await childService.createChild({
-        name: formData.name.trim(),
+        name: sanitizedName,
         dateOfBirth: new Date(formData.dateOfBirth)
       });
 
@@ -63,6 +66,7 @@ export default function ChildProfileSetup({ onChildCreated }) {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="input-field"
               placeholder="Enter your child's name"
+              maxLength={INPUT_LIMITS.NAME_MAX_LENGTH}
               disabled={isSubmitting}
             />
           </div>

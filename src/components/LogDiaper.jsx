@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Droplet } from 'lucide-react';
 import { diaperService } from '../services/db';
+import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputValidation';
 
 export default function LogDiaper({ child }) {
   const navigate = useNavigate();
@@ -50,6 +51,13 @@ export default function LogDiaper({ child }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate timestamp is not in the future
+    if (isFutureDate(formData.timestamp)) {
+      alert('Diaper change time cannot be in the future');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -57,7 +65,7 @@ export default function LogDiaper({ child }) {
         childId: child.id,
         timestamp: new Date(formData.timestamp),
         type: formData.type,
-        notes: formData.notes
+        notes: sanitizeTextInput(formData.notes)
       };
 
       // Add wetness for wet diapers
@@ -176,6 +184,7 @@ export default function LogDiaper({ child }) {
               value={formData.timestamp}
               onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
               className="input-field"
+              max={new Date().toISOString().slice(0, 16)}
               required
             />
           </div>
@@ -290,6 +299,7 @@ export default function LogDiaper({ child }) {
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="input-field resize-none"
               rows="3"
+              maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
               placeholder="Add any additional notes..."
             />
           </div>

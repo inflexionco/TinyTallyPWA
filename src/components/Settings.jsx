@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Baby, Database, Info } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
+import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
 
 export default function Settings({ child, onChildUpdated }) {
   const navigate = useNavigate();
@@ -15,11 +16,29 @@ export default function Settings({ child, onChildUpdated }) {
 
   const handleUpdateChild = async (e) => {
     e.preventDefault();
+
+    const sanitizedName = sanitizeName(formData.name);
+
+    if (!sanitizedName) {
+      alert('Please enter a valid name');
+      return;
+    }
+
+    if (!isValidDate(formData.dateOfBirth)) {
+      alert('Please enter a valid date of birth');
+      return;
+    }
+
+    if (isFutureDate(formData.dateOfBirth)) {
+      alert('Date of birth cannot be in the future');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await childService.updateChild(child.id, {
-        name: formData.name,
+        name: sanitizedName,
         dateOfBirth: new Date(formData.dateOfBirth)
       });
 
@@ -145,6 +164,7 @@ export default function Settings({ child, onChildUpdated }) {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="input-field"
+                  maxLength={INPUT_LIMITS.NAME_MAX_LENGTH}
                   required
                 />
               </div>

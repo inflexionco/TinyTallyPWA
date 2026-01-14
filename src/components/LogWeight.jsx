@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Scale } from 'lucide-react';
 import { weightService } from '../services/db';
+import { INPUT_LIMITS, sanitizeTextInput, parsePositiveFloat, isFutureDate } from '../utils/inputValidation';
 
 export default function LogWeight({ child }) {
   const navigate = useNavigate();
@@ -45,7 +46,14 @@ export default function LogWeight({ child }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.weight || parseFloat(formData.weight) <= 0) {
+    // Validate timestamp is not in the future
+    if (isFutureDate(formData.timestamp)) {
+      alert('Weight recording time cannot be in the future');
+      return;
+    }
+
+    const weight = parsePositiveFloat(formData.weight, INPUT_LIMITS.WEIGHT_MAX);
+    if (weight <= 0) {
       alert('Please enter a valid weight');
       return;
     }
@@ -56,9 +64,9 @@ export default function LogWeight({ child }) {
       const weightData = {
         childId: child.id,
         timestamp: new Date(formData.timestamp),
-        weight: parseFloat(formData.weight),
+        weight: weight,
         unit: formData.unit,
-        notes: formData.notes
+        notes: sanitizeTextInput(formData.notes)
       };
 
       if (editId) {
@@ -121,6 +129,7 @@ export default function LogWeight({ child }) {
               value={formData.timestamp}
               onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
               className="input-field"
+              max={new Date().toISOString().slice(0, 16)}
               required
             />
           </div>
@@ -139,6 +148,7 @@ export default function LogWeight({ child }) {
                 className="input-field flex-1"
                 placeholder="Enter weight"
                 min="0"
+                max={INPUT_LIMITS.WEIGHT_MAX}
                 step="0.01"
                 required
               />
@@ -180,6 +190,7 @@ export default function LogWeight({ child }) {
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="input-field resize-none"
               rows="3"
+              maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
               placeholder="Add any additional notes..."
             />
           </div>

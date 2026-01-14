@@ -5,7 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/icons/icon-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-    <!-- Content Security Policy -->
+    <!-- Content Security Policy
+         NOTE: 'unsafe-inline' and 'unsafe-eval' are needed for Vite development mode.
+         For production builds, consider using a stricter CSP via HTTP headers:
+         - Remove 'unsafe-inline' and 'unsafe-eval' from script-src
+         - Use nonce-based or hash-based script loading
+         - Configure this in your web server (nginx, Apache, etc.)
+    -->
     <meta http-equiv="Content-Security-Policy"
           content="default-src 'self';
                    script-src 'self' 'unsafe-inline' 'unsafe-eval';
@@ -16,7 +22,8 @@
                    object-src 'none';
                    base-uri 'self';
                    form-action 'self';
-                   frame-ancestors 'none';">
+                   frame-ancestors 'none';
+                   upgrade-insecure-requests;">
 
     <meta name="theme-color" content="#60a5fa" />
     <meta name="description" content="TinyTally - Track your child's milk intake, diaper changes, and sleep schedule" />
