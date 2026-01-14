@@ -9,6 +9,7 @@ import {
   parsePositiveFloat,
   isFutureDate
 } from '../utils/inputValidation';
+import Toast from './Toast';
 
 export default function LogFeed({ child }) {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function LogFeed({ child }) {
   const [timerStartTime, setTimerStartTime] = useState(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [loading, setLoading] = useState(!!editId);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (editId) {
@@ -49,8 +51,7 @@ export default function LogFeed({ child }) {
         });
       }
     } catch (error) {
-      console.error('Error loading feed:', error);
-      alert('Failed to load feed data');
+      setToast({ message: 'Failed to load feed data. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -92,7 +93,7 @@ export default function LogFeed({ child }) {
 
     // Validate timestamp is not in the future
     if (isFutureDate(formData.timestamp)) {
-      alert('Feed time cannot be in the future');
+      setToast({ message: 'Feed time cannot be in the future', type: 'error' });
       return;
     }
 
@@ -121,8 +122,7 @@ export default function LogFeed({ child }) {
       }
       navigate('/');
     } catch (error) {
-      console.error('Error saving feed:', error);
-      alert('Failed to save feed. Please try again.');
+      setToast({ message: 'Failed to save feed. Please try again.', type: 'error' });
       setIsSubmitting(false);
     }
   };
@@ -346,6 +346,15 @@ export default function LogFeed({ child }) {
           </div>
         </form>
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

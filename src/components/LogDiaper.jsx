@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Droplet } from 'lucide-react';
 import { diaperService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputValidation';
+import Toast from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 export default function LogDiaper({ child }) {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ export default function LogDiaper({ child }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
+  const [toast, setToast] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (editId) {
@@ -42,8 +46,7 @@ export default function LogDiaper({ child }) {
         });
       }
     } catch (error) {
-      console.error('Error loading diaper:', error);
-      alert('Failed to load diaper data');
+      setToast({ message: 'Failed to load diaper data. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -54,7 +57,7 @@ export default function LogDiaper({ child }) {
 
     // Validate timestamp is not in the future
     if (isFutureDate(formData.timestamp)) {
-      alert('Diaper change time cannot be in the future');
+      setToast({ message: 'Diaper change time cannot be in the future', type: 'error' });
       return;
     }
 
@@ -87,8 +90,7 @@ export default function LogDiaper({ child }) {
       }
       navigate('/');
     } catch (error) {
-      console.error('Error saving diaper:', error);
-      alert('Failed to save diaper change. Please try again.');
+      setToast({ message: 'Failed to save diaper change. Please try again.', type: 'error' });
       setIsSubmitting(false);
     }
   };
@@ -324,6 +326,27 @@ export default function LogDiaper({ child }) {
           </div>
         </form>
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {showConfirm && (
+        <ConfirmDialog
+          title="Unsaved Changes"
+          message="You have unsaved changes. Are you sure you want to leave?"
+          confirmText="Leave"
+          cancelText="Stay"
+          onConfirm={() => navigate('/')}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
     </div>
   );
 }
