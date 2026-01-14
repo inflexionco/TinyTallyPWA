@@ -2,6 +2,13 @@
 
 A Progressive Web App (PWA) designed to help parents track their child's daily activities including milk intake, diaper changes, and sleep patterns.
 
+## 📚 Documentation
+
+- [Quick Start Guide](docs/QUICK_START.md) - Get up and running quickly
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design and structure
+- [Project Summary](docs/PROJECT_SUMMARY.md) - Detailed project information
+- [Device Testing Guide](docs/DEVICE_TESTING.md) - Testing on different devices
+
 ## Features
 
 - **Mobile-First Design**: Optimized for touchscreens with large, finger-friendly buttons
@@ -30,10 +37,15 @@ A Progressive Web App (PWA) designed to help parents track their child's daily a
 
 ```
 tiny-tally-pwa/
+├── docs/                   # Documentation files
+│   ├── ARCHITECTURE.md
+│   ├── DEVICE_TESTING.md
+│   ├── PROJECT_SUMMARY.md
+│   └── QUICK_START.md
 ├── public/
 │   └── icons/              # PWA icons (72x72 to 512x512)
 ├── src/
-│   ├── components/
+│   ├── components/         # React UI components
 │   │   ├── ChildProfileSetup.jsx
 │   │   ├── Dashboard.jsx
 │   │   ├── EventList.jsx
@@ -41,16 +53,18 @@ tiny-tally-pwa/
 │   │   ├── LogDiaper.jsx
 │   │   ├── LogFeed.jsx
 │   │   ├── LogSleep.jsx
+│   │   ├── LogWeight.jsx
 │   │   └── Settings.jsx
 │   ├── services/
-│   │   └── db.js          # Dexie database and services
+│   │   └── db.js           # Dexie database and services
 │   ├── utils/
-│   │   └── dateUtils.js   # Date formatting utilities
+│   │   └── dateUtils.js    # Date formatting utilities
 │   ├── App.jsx
 │   ├── main.jsx
 │   └── index.css
 ├── index.html
 ├── vite.config.js
+├── vercel.json
 ├── tailwind.config.js
 ├── postcss.config.js
 └── package.json
