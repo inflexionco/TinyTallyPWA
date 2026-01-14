@@ -4,6 +4,8 @@ import { ArrowLeft, Baby, Database, Info } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
 import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
+import Toast from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 export default function Settings({ child, onChildUpdated }) {
   const navigate = useNavigate();
@@ -13,6 +15,8 @@ export default function Settings({ child, onChildUpdated }) {
     dateOfBirth: new Date(child.dateOfBirth).toISOString().split('T')[0]
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const handleUpdateChild = async (e) => {
     e.preventDefault();
@@ -20,17 +24,17 @@ export default function Settings({ child, onChildUpdated }) {
     const sanitizedName = sanitizeName(formData.name);
 
     if (!sanitizedName) {
-      alert('Please enter a valid name');
+      setToast({ message: 'Please enter a valid name', type: 'error' });
       return;
     }
 
     if (!isValidDate(formData.dateOfBirth)) {
-      alert('Please enter a valid date of birth');
+      setToast({ message: 'Please enter a valid date of birth', type: 'error' });
       return;
     }
 
     if (isFutureDate(formData.dateOfBirth)) {
-      alert('Date of birth cannot be in the future');
+      setToast({ message: 'Date of birth cannot be in the future', type: 'error' });
       return;
     }
 
@@ -44,9 +48,10 @@ export default function Settings({ child, onChildUpdated }) {
 
       await onChildUpdated();
       setIsEditing(false);
+      setToast({ message: 'Profile updated successfully', type: 'success' });
     } catch (error) {
       console.error('Error updating child:', error);
-      alert('Failed to update profile. Please try again.');
+      setToast({ message: 'Failed to update profile. Please try again.', type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -73,32 +78,36 @@ export default function Settings({ child, onChildUpdated }) {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      setToast({ message: 'Data exported successfully', type: 'success' });
     } catch (error) {
       console.error('Error exporting data:', error);
-      alert('Failed to export data. Please try again.');
+      setToast({ message: 'Failed to export data. Please try again.', type: 'error' });
     }
   };
 
   const handleClearAllData = async () => {
-    if (!confirm('Are you sure you want to delete ALL data? This action cannot be undone!')) {
-      return;
-    }
-
-    if (!confirm('This will permanently delete all feeds, diapers, sleep, and weight records. Are you absolutely sure?')) {
-      return;
-    }
-
-    try {
-      await db.feeds.clear();
-      await db.diapers.clear();
-      await db.sleep.clear();
-      await db.weight.clear();
-      alert('All activity data has been cleared.');
-      navigate('/');
-    } catch (error) {
-      console.error('Error clearing data:', error);
-      alert('Failed to clear data. Please try again.');
-    }
+    setConfirmDialog({
+      title: 'Delete All Data?',
+      message: 'This will permanently delete all feeds, diapers, sleep, and weight records. This action cannot be undone!',
+      confirmText: 'Delete All Data',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await db.feeds.clear();
+          await db.diapers.clear();
+          await db.sleep.clear();
+          await db.weight.clear();
+          setToast({ message: 'All activity data has been cleared.', type: 'success' });
+          setTimeout(() => navigate('/'), 1500);
+        } catch (error) {
+          console.error('Error clearing data:', error);
+          setToast({ message: 'Failed to clear data. Please try again.', type: 'error' });
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
   };
 
   return (
@@ -257,6 +266,28 @@ export default function Settings({ child, onChildUpdated }) {
           </div>
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={confirmDialog.confirmText}
+          cancelText={confirmDialog.cancelText}
+          variant={confirmDialog.variant}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={confirmDialog.onCancel}
+        />
+      )}
     </div>
   );
 }
