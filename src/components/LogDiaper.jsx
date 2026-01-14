@@ -21,6 +21,7 @@ export default function LogDiaper({ child }) {
   });
   const [timeMode, setTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
   const [recentMinutes, setRecentMinutes] = useState(0);
+  const [detailedMode, setDetailedMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
   const [toast, setToast] = useState(null);
@@ -46,8 +47,9 @@ export default function LogDiaper({ child }) {
           quantity: diaper.quantity || '',
           notes: diaper.notes || ''
         });
-        // When editing, show custom time mode
+        // When editing, show custom time mode and detailed mode
         setTimeMode('custom');
+        setDetailedMode(true);
       }
     } catch (error) {
       setToast({ message: 'Failed to load diaper data. Please try again.', type: 'error' });
@@ -150,6 +152,20 @@ export default function LogDiaper({ child }) {
       {/* Form */}
       <div className="container-safe py-6">
         <form onSubmit={handleSubmit} className="card space-y-6">
+          {/* Mode Toggle - Show in detailed mode only */}
+          {detailedMode && (
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700">Detailed Mode</h3>
+              <button
+                type="button"
+                onClick={() => setDetailedMode(false)}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                ← Simple Mode
+              </button>
+            </div>
+          )}
+
           {/* Diaper Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -165,7 +181,7 @@ export default function LogDiaper({ child }) {
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                Wet
+                💧 Wet
               </button>
               <button
                 type="button"
@@ -176,7 +192,7 @@ export default function LogDiaper({ child }) {
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                Dirty
+                💩 Dirty
               </button>
               <button
                 type="button"
@@ -187,17 +203,18 @@ export default function LogDiaper({ child }) {
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                Both
+                💧💩 Both
               </button>
             </div>
           </div>
 
-          {/* Timestamp */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Clock className="w-4 h-4 inline mr-1" />
-              When did this happen?
-            </label>
+          {/* Timestamp - Only in detailed mode */}
+          {detailedMode && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="w-4 h-4 inline mr-1" />
+                When did this happen?
+              </label>
 
             {timeMode === 'now' && (
               <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
@@ -318,10 +335,11 @@ export default function LogDiaper({ child }) {
                 </button>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
-          {/* Wetness (for wet diapers) */}
-          {showWetFields && (
+          {/* Wetness (for wet diapers) - Only in detailed mode */}
+          {detailedMode && showWetFields && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Wetness Level
@@ -345,8 +363,8 @@ export default function LogDiaper({ child }) {
             </div>
           )}
 
-          {/* Stool Details (for dirty diapers) */}
-          {showDirtyFields && (
+          {/* Stool Details (for dirty diapers) - Only in detailed mode */}
+          {detailedMode && showDirtyFields && (
             <>
               {/* Consistency */}
               <div>
@@ -419,21 +437,34 @@ export default function LogDiaper({ child }) {
             </>
           )}
 
-          {/* Notes */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input-field resize-none"
-              rows="3"
-              maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
-              placeholder="Add any additional notes..."
-            />
-          </div>
+          {/* Notes - Only in detailed mode */}
+          {detailedMode && (
+            <div>
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                Notes (Optional)
+              </label>
+              <textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="input-field resize-none"
+                rows="3"
+                maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
+                placeholder="Add any additional notes..."
+              />
+            </div>
+          )}
+
+          {/* Add Details Button - Only in quick mode */}
+          {!detailedMode && (
+            <button
+              type="button"
+              onClick={() => setDetailedMode(true)}
+              className="w-full p-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-all font-medium"
+            >
+              📝 Add Details (time, notes, etc.)
+            </button>
+          )}
 
           {/* Submit Buttons */}
           <div className="flex gap-3 pt-4">
