@@ -1,4 +1,4 @@
-import { Baby, Droplet, Moon, Scale, Trash2, Edit2 } from 'lucide-react';
+import { Baby, Droplet, Moon, Scale, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService } from '../services/db';
@@ -9,6 +9,7 @@ import ConfirmDialog from './ConfirmDialog';
 export default function EventList({ events, onRefresh }) {
   const navigate = useNavigate();
   const [deletingId, setDeletingId] = useState(null);
+  const [repeatingId, setRepeatingId] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
@@ -58,6 +59,115 @@ export default function EventList({ events, onRefresh }) {
     });
   };
 
+  const handleRepeat = async (event) => {
+    setRepeatingId(event.id);
+
+    try {
+      let newId;
+      let eventDescription = '';
+
+      // Create a copy of the event with current timestamp
+      if (event.eventType === 'feed') {
+        const feedData = {
+          childId: event.childId,
+          timestamp: new Date(),
+          type: event.type,
+          duration: event.duration,
+          amount: event.amount,
+          unit: event.unit,
+          notes: event.notes || ''
+        };
+        newId = await feedService.addFeed(feedData);
+
+        const typeLabels = {
+          'breastfeeding-left': 'Breast (Left)',
+          'breastfeeding-right': 'Breast (Right)',
+          'formula': 'Formula',
+          'pumped': 'Pumped Milk'
+        };
+        const detail = event.duration
+          ? formatDuration(event.duration)
+          : `${event.amount} ${event.unit}`;
+        eventDescription = `${typeLabels[event.type]} - ${detail}`;
+      } else if (event.eventType === 'diaper') {
+        const diaperData = {
+          childId: event.childId,
+          timestamp: new Date(),
+          type: event.type,
+          wetness: event.wetness,
+          consistency: event.consistency,
+          color: event.color,
+          quantity: event.quantity,
+          notes: event.notes || ''
+        };
+        newId = await diaperService.addDiaper(diaperData);
+
+        const typeLabel = event.type === 'both' ? 'Wet & Dirty' : event.type;
+        eventDescription = `${typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1)} Diaper`;
+      } else if (event.eventType === 'sleep') {
+        // For sleep, only repeat if it's a completed sleep (has endTime)
+        if (!event.endTime) {
+          setToast({ message: 'Cannot repeat active sleep session', type: 'info' });
+          setRepeatingId(null);
+          return;
+        }
+
+        const duration = calculateDuration(event.startTime, event.endTime);
+        const sleepData = {
+          childId: event.childId,
+          startTime: new Date(),
+          endTime: new Date(Date.now() + duration * 60 * 1000), // Add duration in milliseconds
+          type: event.type,
+          notes: event.notes || ''
+        };
+        newId = await sleepService.addSleep(sleepData);
+
+        const typeLabel = event.type === 'nap' ? 'Nap' : 'Night Sleep';
+        eventDescription = `${typeLabel} - ${formatDuration(duration)}`;
+      } else if (event.eventType === 'weight') {
+        const weightData = {
+          childId: event.childId,
+          timestamp: new Date(),
+          weight: event.weight,
+          unit: event.unit,
+          notes: event.notes || ''
+        };
+        newId = await weightService.addWeight(weightData);
+
+        eventDescription = `Weight - ${event.weight} ${event.unit}`;
+      }
+
+      setToast({
+        message: `Repeated: ${eventDescription} (now)`,
+        type: 'success',
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            // Delete the newly created entry
+            if (event.eventType === 'feed') {
+              await feedService.deleteFeed(newId);
+            } else if (event.eventType === 'diaper') {
+              await diaperService.deleteDiaper(newId);
+            } else if (event.eventType === 'sleep') {
+              await sleepService.deleteSleep(newId);
+            } else if (event.eventType === 'weight') {
+              await weightService.deleteWeight(newId);
+            }
+            await onRefresh();
+            setToast({ message: 'Repeat cancelled', type: 'info' });
+          }
+        }
+      });
+
+      await onRefresh();
+    } catch (error) {
+      console.error('Error repeating event:', error);
+      setToast({ message: 'Failed to repeat entry. Please try again.', type: 'error' });
+    } finally {
+      setRepeatingId(null);
+    }
+  };
+
   const renderFeedEvent = (event) => {
     const typeLabels = {
       'breastfeeding-left': 'Breast (Left)',
@@ -87,6 +197,14 @@ export default function EventList({ events, onRefresh }) {
             </div>
           </div>
           <div className="flex gap-1 items-center">
+            <button
+              onClick={() => handleRepeat(event)}
+              disabled={repeatingId === event.id}
+              className="p-2 text-gray-400 hover:text-green-500 active:scale-95 transition-all flex-shrink-0"
+              title="Repeat (log again now)"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
             <button
               onClick={() => navigate(`/log-feed?id=${event.id}`)}
               className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
@@ -142,6 +260,14 @@ export default function EventList({ events, onRefresh }) {
           </div>
           <div className="flex gap-1 items-center">
             <button
+              onClick={() => handleRepeat(event)}
+              disabled={repeatingId === event.id}
+              className="p-2 text-gray-400 hover:text-green-500 active:scale-95 transition-all flex-shrink-0"
+              title="Repeat (log again now)"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => navigate(`/log-diaper?id=${event.id}`)}
               className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
               title="Edit"
@@ -193,6 +319,16 @@ export default function EventList({ events, onRefresh }) {
             </div>
           </div>
           <div className="flex gap-1 items-center">
+            {event.endTime && (
+              <button
+                onClick={() => handleRepeat(event)}
+                disabled={repeatingId === event.id}
+                className="p-2 text-gray-400 hover:text-green-500 active:scale-95 transition-all flex-shrink-0"
+                title="Repeat (log again now)"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => navigate(`/log-sleep?id=${event.id}`)}
               className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
@@ -234,6 +370,14 @@ export default function EventList({ events, onRefresh }) {
             </div>
           </div>
           <div className="flex gap-1 items-center">
+            <button
+              onClick={() => handleRepeat(event)}
+              disabled={repeatingId === event.id}
+              className="p-2 text-gray-400 hover:text-green-500 active:scale-95 transition-all flex-shrink-0"
+              title="Repeat (log again now)"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
             <button
               onClick={() => navigate(`/log-weight?id=${event.id}`)}
               className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
@@ -278,6 +422,8 @@ export default function EventList({ events, onRefresh }) {
           message={toast.message}
           type={toast.type}
           onClose={() => setToast(null)}
+          duration={5000}
+          action={toast.action}
         />
       )}
 
