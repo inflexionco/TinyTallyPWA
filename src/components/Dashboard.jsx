@@ -4,6 +4,7 @@ import { Baby, Droplet, Moon, Scale, History, Settings, RefreshCw } from 'lucide
 import { feedService, diaperService, sleepService, weightService, statsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
+import Toast from './Toast';
 
 export default function Dashboard({ child }) {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export default function Dashboard({ child }) {
   const [lastWeight, setLastWeight] = useState(null);
   const [activeSleep, setActiveSleep] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [lastQuickLogId, setLastQuickLogId] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -72,6 +75,130 @@ export default function Dashboard({ child }) {
 
   const getSleepTypeLabel = (type) => {
     return type === 'nap' ? 'Nap' : 'Night Sleep';
+  };
+
+  // Quick-log functions for one-tap logging
+  const handleQuickLogDiaper = async (type) => {
+    try {
+      const diaperData = {
+        childId: child.id,
+        timestamp: new Date(),
+        type: type,
+        notes: 'Quick log'
+      };
+
+      // Add defaults for wet diapers
+      if (type === 'wet' || type === 'both') {
+        diaperData.wetness = 'medium';
+      }
+
+      // Add defaults for dirty diapers
+      if (type === 'dirty' || type === 'both') {
+        diaperData.consistency = 'soft';
+        diaperData.color = 'yellow';
+        diaperData.quantity = 'medium';
+      }
+
+      const id = await diaperService.addDiaper(diaperData);
+      setLastQuickLogId({ type: 'diaper', id });
+
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+      setToast({
+        message: `${typeLabel} diaper logged at ${formatTime(new Date())}`,
+        type: 'success',
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            await diaperService.deleteDiaper(id);
+            await loadDashboardData();
+            setToast({ message: 'Diaper entry removed', type: 'info' });
+          }
+        }
+      });
+
+      await loadDashboardData();
+    } catch (error) {
+      setToast({ message: 'Failed to log diaper. Please try again.', type: 'error' });
+    }
+  };
+
+  const handleQuickLogFeed = async (type) => {
+    try {
+      const feedData = {
+        childId: child.id,
+        timestamp: new Date(),
+        type: type,
+        notes: 'Quick log'
+      };
+
+      // Add default duration for breastfeeding, or amount for formula/pumped
+      if (type.startsWith('breastfeeding')) {
+        feedData.duration = 15; // 15 minutes default
+      } else {
+        feedData.amount = 4; // 4 oz default
+        feedData.unit = 'oz';
+      }
+
+      const id = await feedService.addFeed(feedData);
+      setLastQuickLogId({ type: 'feed', id });
+
+      const typeLabel = getFeedTypeLabel(type);
+      setToast({
+        message: `${typeLabel} logged at ${formatTime(new Date())}`,
+        type: 'success',
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            await feedService.deleteFeed(id);
+            await loadDashboardData();
+            setToast({ message: 'Feed entry removed', type: 'info' });
+          }
+        }
+      });
+
+      await loadDashboardData();
+    } catch (error) {
+      setToast({ message: 'Failed to log feed. Please try again.', type: 'error' });
+    }
+  };
+
+  const handleQuickLogSleep = async (type) => {
+    try {
+      // Check if there's already an active sleep
+      if (activeSleep) {
+        setToast({ message: 'Sleep tracking already in progress', type: 'info' });
+        return;
+      }
+
+      const sleepData = {
+        childId: child.id,
+        startTime: new Date(),
+        endTime: null,
+        type: type,
+        notes: 'Quick log'
+      };
+
+      const id = await sleepService.addSleep(sleepData);
+      setLastQuickLogId({ type: 'sleep', id });
+
+      const typeLabel = type === 'nap' ? 'Nap' : 'Night sleep';
+      setToast({
+        message: `${typeLabel} tracking started`,
+        type: 'success',
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            await sleepService.deleteSleep(id);
+            await loadDashboardData();
+            setToast({ message: 'Sleep tracking cancelled', type: 'info' });
+          }
+        }
+      });
+
+      await loadDashboardData();
+    } catch (error) {
+      setToast({ message: 'Failed to start sleep tracking. Please try again.', type: 'error' });
+    }
   };
 
   return (
@@ -132,7 +259,98 @@ export default function Dashboard({ child }) {
       </div>
 
       <div className="container-safe py-6">
-        {/* Quick Log Buttons */}
+        {/* Quick Actions - One-Tap Logging */}
+        <div className="card mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Log (Just Now)</h2>
+
+          {/* Diaper Quick Actions */}
+          <div className="mb-4">
+            <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Diaper</div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleQuickLogDiaper('wet')}
+                className="flex flex-col items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 rounded-xl transition-colors border-2 border-blue-200"
+              >
+                <Droplet className="w-6 h-6 text-blue-500 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Wet</span>
+              </button>
+              <button
+                onClick={() => handleQuickLogDiaper('dirty')}
+                className="flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 rounded-xl transition-colors border-2 border-amber-200"
+              >
+                <Droplet className="w-6 h-6 text-amber-600 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Dirty</span>
+              </button>
+              <button
+                onClick={() => handleQuickLogDiaper('both')}
+                className="flex flex-col items-center justify-center p-3 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-xl transition-colors border-2 border-green-200"
+              >
+                <Droplet className="w-6 h-6 text-green-500 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Both</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Feeding Quick Actions */}
+          <div className="mb-4">
+            <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Feeding</div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleQuickLogFeed('breastfeeding-left')}
+                className="flex flex-col items-center justify-center p-3 bg-pink-50 hover:bg-pink-100 active:bg-pink-200 rounded-xl transition-colors border-2 border-pink-200"
+              >
+                <Baby className="w-6 h-6 text-pink-500 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Left</span>
+              </button>
+              <button
+                onClick={() => handleQuickLogFeed('breastfeeding-right')}
+                className="flex flex-col items-center justify-center p-3 bg-pink-50 hover:bg-pink-100 active:bg-pink-200 rounded-xl transition-colors border-2 border-pink-200"
+              >
+                <Baby className="w-6 h-6 text-pink-500 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Right</span>
+              </button>
+              <button
+                onClick={() => handleQuickLogFeed('formula')}
+                className="flex flex-col items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 rounded-xl transition-colors border-2 border-blue-200"
+              >
+                <Baby className="w-6 h-6 text-blue-500 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Bottle</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sleep Quick Actions */}
+          <div>
+            <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Sleep</div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleQuickLogSleep('nap')}
+                className="flex flex-col items-center justify-center p-3 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 rounded-xl transition-colors border-2 border-purple-200"
+              >
+                <Moon className="w-6 h-6 text-purple-500 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Start Nap</span>
+              </button>
+              <button
+                onClick={() => handleQuickLogSleep('night')}
+                className="flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 rounded-xl transition-colors border-2 border-indigo-200"
+              >
+                <Moon className="w-6 h-6 text-indigo-600 mb-1" />
+                <span className="text-xs font-semibold text-gray-700">Start Sleep</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center">
+              Need more options? Use detailed forms below
+            </p>
+          </div>
+        </div>
+
+        {/* Detailed Log Buttons */}
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-gray-600 mb-2">Detailed Forms</h3>
+        </div>
         <div className="grid grid-cols-2 gap-4 mb-6">
           <button
             onClick={() => navigate('/log-feed')}
@@ -297,6 +515,17 @@ export default function Dashboard({ child }) {
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={5000}
+          action={toast.action}
+        />
+      )}
     </div>
   );
 }
