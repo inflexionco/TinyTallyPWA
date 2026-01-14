@@ -16,6 +16,10 @@ export default function LogSleep({ child }) {
     endTime: new Date().toISOString().slice(0, 16),
     notes: ''
   });
+  const [startTimeMode, setStartTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
+  const [endTimeMode, setEndTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
+  const [startRecentMinutes, setStartRecentMinutes] = useState(0);
+  const [endRecentMinutes, setEndRecentMinutes] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -39,6 +43,9 @@ export default function LogSleep({ child }) {
           endTime: sleep.endTime ? new Date(sleep.endTime).toISOString().slice(0, 16) : '',
           notes: sleep.notes || ''
         });
+        // When editing, show custom time mode
+        setStartTimeMode('custom');
+        setEndTimeMode('custom');
       }
     } catch (error) {
       console.error('Error loading sleep:', error);
@@ -93,23 +100,50 @@ export default function LogSleep({ child }) {
     }
   };
 
+  const getStartTimestamp = () => {
+    if (startTimeMode === 'now') {
+      return new Date();
+    } else if (startTimeMode === 'recent') {
+      const time = new Date();
+      time.setMinutes(time.getMinutes() - startRecentMinutes);
+      return time;
+    } else {
+      return new Date(formData.startTime);
+    }
+  };
+
+  const getEndTimestamp = () => {
+    if (endTimeMode === 'now') {
+      return new Date();
+    } else if (endTimeMode === 'recent') {
+      const time = new Date();
+      time.setMinutes(time.getMinutes() - endRecentMinutes);
+      return time;
+    } else {
+      return new Date(formData.endTime);
+    }
+  };
+
   const handleSubmitPastSleep = async (e) => {
     e.preventDefault();
 
+    const startTime = getStartTimestamp();
+    const endTime = getEndTimestamp();
+
     // Validate start time is not in the future
-    if (isFutureDate(formData.startTime)) {
+    if (startTime > new Date()) {
       setToast({ message: 'Sleep start time cannot be in the future', type: 'error' });
       return;
     }
 
     // Validate end time is not in the future
-    if (isFutureDate(formData.endTime)) {
+    if (endTime > new Date()) {
       setToast({ message: 'Sleep end time cannot be in the future', type: 'error' });
       return;
     }
 
     // Validate end time is after start time
-    if (!isValidTimeRange(formData.startTime, formData.endTime)) {
+    if (endTime <= startTime) {
       setToast({ message: 'Sleep end time must be after start time', type: 'error' });
       return;
     }
@@ -119,8 +153,8 @@ export default function LogSleep({ child }) {
     try {
       const sleepData = {
         childId: child.id,
-        startTime: new Date(formData.startTime),
-        endTime: new Date(formData.endTime),
+        startTime: startTime,
+        endTime: endTime,
         type: formData.type,
         notes: sanitizeTextInput(formData.notes)
       };
@@ -291,36 +325,258 @@ export default function LogSleep({ child }) {
 
               {/* Start Time */}
               <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
-                  Start Time
+                  When did sleep start?
                 </label>
-                <input
-                  type="datetime-local"
-                  id="startTime"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="input-field"
-                  max={new Date().toISOString().slice(0, 16)}
-                  required
-                />
+
+                {startTimeMode === 'now' && (
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-purple-500" />
+                        <span className="font-medium text-gray-900">Just now</span>
+                        <span className="text-purple-600">✓</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStartTimeMode('recent')}
+                        className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        Adjust time...
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {startTimeMode === 'recent' && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartRecentMinutes(0);
+                          setStartTimeMode('now');
+                        }}
+                        className="p-3 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-sm font-medium"
+                      >
+                        Just now
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartRecentMinutes(15);
+                          setStartTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          startRecentMinutes === 15 && startTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        15 min ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartRecentMinutes(30);
+                          setStartTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          startRecentMinutes === 30 && startTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        30 min ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartRecentMinutes(60);
+                          setStartTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          startRecentMinutes === 60 && startTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        1 hour ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartRecentMinutes(120);
+                          setStartTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          startRecentMinutes === 120 && startTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        2 hours ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStartTimeMode('custom')}
+                        className="p-3 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-sm font-medium"
+                      >
+                        Custom time...
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {startTimeMode === 'custom' && (
+                  <div className="space-y-3">
+                    <input
+                      type="datetime-local"
+                      id="startTime"
+                      value={formData.startTime}
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      className="input-field"
+                      max={new Date().toISOString().slice(0, 16)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setStartTimeMode('now')}
+                      className="text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      ← Back to quick options
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* End Time */}
               <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
-                  End Time
+                  When did sleep end?
                 </label>
-                <input
-                  type="datetime-local"
-                  id="endTime"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="input-field"
-                  max={new Date().toISOString().slice(0, 16)}
-                  required
-                />
+
+                {endTimeMode === 'now' && (
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-purple-500" />
+                        <span className="font-medium text-gray-900">Just now</span>
+                        <span className="text-purple-600">✓</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEndTimeMode('recent')}
+                        className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        Adjust time...
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {endTimeMode === 'recent' && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEndRecentMinutes(0);
+                          setEndTimeMode('now');
+                        }}
+                        className="p-3 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-sm font-medium"
+                      >
+                        Just now
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEndRecentMinutes(5);
+                          setEndTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          endRecentMinutes === 5 && endTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        5 min ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEndRecentMinutes(15);
+                          setEndTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          endRecentMinutes === 15 && endTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        15 min ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEndRecentMinutes(30);
+                          setEndTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          endRecentMinutes === 30 && endTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        30 min ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEndRecentMinutes(60);
+                          setEndTimeMode('recent');
+                        }}
+                        className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                          endRecentMinutes === 60 && endTimeMode === 'recent'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'
+                        }`}
+                      >
+                        1 hour ago
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEndTimeMode('custom')}
+                        className="p-3 rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-sm font-medium"
+                      >
+                        Custom time...
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {endTimeMode === 'custom' && (
+                  <div className="space-y-3">
+                    <input
+                      type="datetime-local"
+                      id="endTime"
+                      value={formData.endTime}
+                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                      className="input-field"
+                      max={new Date().toISOString().slice(0, 16)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEndTimeMode('now')}
+                      className="text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      ← Back to quick options
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Notes */}
