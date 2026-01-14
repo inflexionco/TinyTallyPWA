@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Scale } from 'lucide-react';
 import { weightService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput, parsePositiveFloat, isFutureDate } from '../utils/inputValidation';
+import Toast from './Toast';
 
 export default function LogWeight({ child }) {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function LogWeight({ child }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (editId) {
@@ -37,7 +39,7 @@ export default function LogWeight({ child }) {
       }
     } catch (error) {
       console.error('Error loading weight:', error);
-      alert('Failed to load weight data');
+      setToast({ message: 'Failed to load weight data. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -48,13 +50,13 @@ export default function LogWeight({ child }) {
 
     // Validate timestamp is not in the future
     if (isFutureDate(formData.timestamp)) {
-      alert('Weight recording time cannot be in the future');
+      setToast({ message: 'Weight recording time cannot be in the future', type: 'error' });
       return;
     }
 
     const weight = parsePositiveFloat(formData.weight, INPUT_LIMITS.WEIGHT_MAX);
     if (weight <= 0) {
-      alert('Please enter a valid weight');
+      setToast({ message: 'Please enter a valid weight', type: 'error' });
       return;
     }
 
@@ -78,7 +80,7 @@ export default function LogWeight({ child }) {
       navigate('/');
     } catch (error) {
       console.error('Error saving weight:', error);
-      alert('Failed to save weight. Please try again.');
+      setToast({ message: 'Failed to save weight. Please try again.', type: 'error' });
       setIsSubmitting(false);
     }
   };
@@ -215,6 +217,15 @@ export default function LogWeight({ child }) {
           </div>
         </form>
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

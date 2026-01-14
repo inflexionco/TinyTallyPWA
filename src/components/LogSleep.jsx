@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Moon } from 'lucide-react';
 import { sleepService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput, isFutureDate, isValidTimeRange } from '../utils/inputValidation';
+import Toast from './Toast';
 
 export default function LogSleep({ child }) {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function LogSleep({ child }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if (editId) {
@@ -40,7 +42,7 @@ export default function LogSleep({ child }) {
       }
     } catch (error) {
       console.error('Error loading sleep:', error);
-      alert('Failed to load sleep data');
+      setToast({ message: 'Failed to load sleep data. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,7 @@ export default function LogSleep({ child }) {
       setFormData({ ...formData, notes: '' });
     } catch (error) {
       console.error('Error starting sleep:', error);
-      alert('Failed to start sleep tracking. Please try again.');
+      setToast({ message: 'Failed to start sleep tracking. Please try again.', type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -86,7 +88,7 @@ export default function LogSleep({ child }) {
       navigate('/');
     } catch (error) {
       console.error('Error ending sleep:', error);
-      alert('Failed to end sleep tracking. Please try again.');
+      setToast({ message: 'Failed to end sleep tracking. Please try again.', type: 'error' });
       setIsSubmitting(false);
     }
   };
@@ -96,19 +98,19 @@ export default function LogSleep({ child }) {
 
     // Validate start time is not in the future
     if (isFutureDate(formData.startTime)) {
-      alert('Sleep start time cannot be in the future');
+      setToast({ message: 'Sleep start time cannot be in the future', type: 'error' });
       return;
     }
 
     // Validate end time is not in the future
     if (isFutureDate(formData.endTime)) {
-      alert('Sleep end time cannot be in the future');
+      setToast({ message: 'Sleep end time cannot be in the future', type: 'error' });
       return;
     }
 
     // Validate end time is after start time
     if (!isValidTimeRange(formData.startTime, formData.endTime)) {
-      alert('Sleep end time must be after start time');
+      setToast({ message: 'Sleep end time must be after start time', type: 'error' });
       return;
     }
 
@@ -132,7 +134,7 @@ export default function LogSleep({ child }) {
       navigate('/');
     } catch (error) {
       console.error('Error saving sleep:', error);
-      alert('Failed to save sleep. Please try again.');
+      setToast({ message: 'Failed to save sleep. Please try again.', type: 'error' });
       setIsSubmitting(false);
     }
   };
@@ -359,6 +361,15 @@ export default function LogSleep({ child }) {
           </div>
         )}
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
