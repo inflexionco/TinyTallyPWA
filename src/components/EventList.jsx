@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService } from '../services/db';
 import { useState } from 'react';
+import Toast from './Toast';
+import ConfirmDialog from './ConfirmDialog';
 
 export default function EventList({ events, onRefresh }) {
   const navigate = useNavigate();
   const [deletingId, setDeletingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const getStoolColorClasses = (color) => {
     const colorMap = {
@@ -20,30 +24,38 @@ export default function EventList({ events, onRefresh }) {
   };
 
   const handleDelete = async (event) => {
-    if (!confirm('Are you sure you want to delete this entry?')) {
-      return;
-    }
+    setConfirmDialog({
+      title: 'Delete Entry?',
+      message: 'Are you sure you want to delete this entry? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setDeletingId(event.id);
 
-    setDeletingId(event.id);
+        try {
+          if (event.eventType === 'feed') {
+            await feedService.deleteFeed(event.id);
+          } else if (event.eventType === 'diaper') {
+            await diaperService.deleteDiaper(event.id);
+          } else if (event.eventType === 'sleep') {
+            await sleepService.deleteSleep(event.id);
+          } else if (event.eventType === 'weight') {
+            await weightService.deleteWeight(event.id);
+          }
 
-    try {
-      if (event.eventType === 'feed') {
-        await feedService.deleteFeed(event.id);
-      } else if (event.eventType === 'diaper') {
-        await diaperService.deleteDiaper(event.id);
-      } else if (event.eventType === 'sleep') {
-        await sleepService.deleteSleep(event.id);
-      } else if (event.eventType === 'weight') {
-        await weightService.deleteWeight(event.id);
-      }
-
-      onRefresh();
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      alert('Failed to delete. Please try again.');
-    } finally {
-      setDeletingId(null);
-    }
+          setToast({ message: 'Entry deleted successfully', type: 'success' });
+          onRefresh();
+        } catch (error) {
+          console.error('Error deleting event:', error);
+          setToast({ message: 'Failed to delete. Please try again.', type: 'error' });
+        } finally {
+          setDeletingId(null);
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
   };
 
   const renderFeedEvent = (event) => {
@@ -244,19 +256,43 @@ export default function EventList({ events, onRefresh }) {
   };
 
   return (
-    <div className="space-y-3">
-      {events.map((event) => {
-        if (event.eventType === 'feed') {
-          return <div key={`feed-${event.id}`}>{renderFeedEvent(event)}</div>;
-        } else if (event.eventType === 'diaper') {
-          return <div key={`diaper-${event.id}`}>{renderDiaperEvent(event)}</div>;
-        } else if (event.eventType === 'sleep') {
-          return <div key={`sleep-${event.id}`}>{renderSleepEvent(event)}</div>;
-        } else if (event.eventType === 'weight') {
-          return <div key={`weight-${event.id}`}>{renderWeightEvent(event)}</div>;
-        }
-        return null;
-      })}
-    </div>
+    <>
+      <div className="space-y-3">
+        {events.map((event) => {
+          if (event.eventType === 'feed') {
+            return <div key={`feed-${event.id}`}>{renderFeedEvent(event)}</div>;
+          } else if (event.eventType === 'diaper') {
+            return <div key={`diaper-${event.id}`}>{renderDiaperEvent(event)}</div>;
+          } else if (event.eventType === 'sleep') {
+            return <div key={`sleep-${event.id}`}>{renderSleepEvent(event)}</div>;
+          } else if (event.eventType === 'weight') {
+            return <div key={`weight-${event.id}`}>{renderWeightEvent(event)}</div>;
+          }
+          return null;
+        })}
+      </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={confirmDialog.confirmText}
+          cancelText={confirmDialog.cancelText}
+          variant={confirmDialog.variant}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={confirmDialog.onCancel}
+        />
+      )}
+    </>
   );
 }
