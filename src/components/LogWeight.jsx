@@ -15,6 +15,8 @@ export default function LogWeight({ child }) {
     unit: 'kg',
     notes: ''
   });
+  const [timeMode, setTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
+  const [recentMinutes, setRecentMinutes] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
   const [toast, setToast] = useState(null);
@@ -36,6 +38,8 @@ export default function LogWeight({ child }) {
           unit: weight.unit,
           notes: weight.notes || ''
         });
+        // When editing, show custom time mode
+        setTimeMode('custom');
       }
     } catch (error) {
       console.error('Error loading weight:', error);
@@ -45,11 +49,25 @@ export default function LogWeight({ child }) {
     }
   };
 
+  const getTimestamp = () => {
+    if (timeMode === 'now') {
+      return new Date();
+    } else if (timeMode === 'recent') {
+      const time = new Date();
+      time.setMinutes(time.getMinutes() - recentMinutes);
+      return time;
+    } else {
+      return new Date(formData.timestamp);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const timestamp = getTimestamp();
+
     // Validate timestamp is not in the future
-    if (isFutureDate(formData.timestamp)) {
+    if (timestamp > new Date()) {
       setToast({ message: 'Weight recording time cannot be in the future', type: 'error' });
       return;
     }
@@ -65,7 +83,7 @@ export default function LogWeight({ child }) {
     try {
       const weightData = {
         childId: child.id,
-        timestamp: new Date(formData.timestamp),
+        timestamp: timestamp,
         weight: weight,
         unit: formData.unit,
         notes: sanitizeTextInput(formData.notes)
@@ -121,19 +139,130 @@ export default function LogWeight({ child }) {
         <form onSubmit={handleSubmit} className="card space-y-6">
           {/* Timestamp */}
           <div>
-            <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               <Clock className="w-4 h-4 inline mr-1" />
-              Date & Time
+              When was this weight recorded?
             </label>
-            <input
-              type="datetime-local"
-              id="timestamp"
-              value={formData.timestamp}
-              onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
-              className="input-field"
-              max={new Date().toISOString().slice(0, 16)}
-              required
-            />
+
+            {timeMode === 'now' && (
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-orange-500" />
+                    <span className="font-medium text-gray-900">Just now</span>
+                    <span className="text-orange-600">✓</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTimeMode('recent')}
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  >
+                    Adjust time...
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {timeMode === 'recent' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentMinutes(0);
+                      setTimeMode('now');
+                    }}
+                    className="p-3 rounded-xl border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50 transition-all text-sm font-medium"
+                  >
+                    Just now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentMinutes(5);
+                      setTimeMode('recent');
+                    }}
+                    className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                      recentMinutes === 5 && timeMode === 'recent'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 hover:border-orange-400 hover:bg-orange-50'
+                    }`}
+                  >
+                    5 min ago
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentMinutes(15);
+                      setTimeMode('recent');
+                    }}
+                    className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                      recentMinutes === 15 && timeMode === 'recent'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 hover:border-orange-400 hover:bg-orange-50'
+                    }`}
+                  >
+                    15 min ago
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentMinutes(30);
+                      setTimeMode('recent');
+                    }}
+                    className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                      recentMinutes === 30 && timeMode === 'recent'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 hover:border-orange-400 hover:bg-orange-50'
+                    }`}
+                  >
+                    30 min ago
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecentMinutes(60);
+                      setTimeMode('recent');
+                    }}
+                    className={`p-3 rounded-xl border-2 transition-all text-sm font-medium ${
+                      recentMinutes === 60 && timeMode === 'recent'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 hover:border-orange-400 hover:bg-orange-50'
+                    }`}
+                  >
+                    1 hour ago
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeMode('custom')}
+                    className="p-3 rounded-xl border-2 border-gray-200 hover:border-orange-400 hover:bg-orange-50 transition-all text-sm font-medium"
+                  >
+                    Custom time...
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {timeMode === 'custom' && (
+              <div className="space-y-3">
+                <input
+                  type="datetime-local"
+                  id="timestamp"
+                  value={formData.timestamp}
+                  onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
+                  className="input-field"
+                  max={new Date().toISOString().slice(0, 16)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setTimeMode('now')}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  ← Back to quick options
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Weight */}
