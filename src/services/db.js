@@ -97,6 +97,30 @@ export const feedService = {
 
   async updateFeed(id, feedData) {
     return await db.feeds.update(id, feedData);
+  },
+
+  async getLastBreastfeedingSide(childId) {
+    const feeds = await db.feeds
+      .where('childId')
+      .equals(childId || 1)
+      .filter(feed => feed.type === 'breastfeeding-left' || feed.type === 'breastfeeding-right')
+      .reverse()
+      .sortBy('timestamp');
+
+    if (feeds.length > 0) {
+      const lastFeed = feeds[0];
+      const side = lastFeed.type === 'breastfeeding-left' ? 'left' : 'right';
+      const suggestedSide = side === 'left' ? 'right' : 'left';
+
+      return {
+        side,
+        timestamp: lastFeed.timestamp,
+        suggestedSide,
+        timeSince: Date.now() - new Date(lastFeed.timestamp).getTime() // milliseconds
+      };
+    }
+
+    return null;
   }
 };
 

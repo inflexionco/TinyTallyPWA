@@ -18,6 +18,7 @@ export default function Dashboard({ child }) {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [lastQuickLogId, setLastQuickLogId] = useState(null);
+  const [breastSuggestion, setBreastSuggestion] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -27,13 +28,14 @@ export default function Dashboard({ child }) {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, activeSleepData] = await Promise.all([
+      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, activeSleepData, breastSuggestionData] = await Promise.all([
         statsService.getDailyStats(child.id, new Date()),
         feedService.getLastFeed(child.id),
         diaperService.getLastDiaper(child.id),
         sleepService.getLastSleep(child.id),
         weightService.getLastWeight(child.id),
-        sleepService.getActiveSleep(child.id)
+        sleepService.getActiveSleep(child.id),
+        feedService.getLastBreastfeedingSide(child.id)
       ]);
 
       setStats(statsData);
@@ -42,6 +44,7 @@ export default function Dashboard({ child }) {
       setLastSleep(lastSleepData);
       setLastWeight(lastWeightData);
       setActiveSleep(activeSleepData);
+      setBreastSuggestion(breastSuggestionData);
 
       // Combine all events and sort by time
       const allEvents = [
@@ -75,6 +78,16 @@ export default function Dashboard({ child }) {
 
   const getSleepTypeLabel = (type) => {
     return type === 'nap' ? 'Nap' : 'Night Sleep';
+  };
+
+  const formatTimeSince = (milliseconds) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   // Quick-log functions for one-tap logging
@@ -259,6 +272,48 @@ export default function Dashboard({ child }) {
       </div>
 
       <div className="container-safe py-6">
+        {/* Feeding Suggestion Widget */}
+        {breastSuggestion && (
+          <div className="card mb-6 bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Baby className="w-5 h-5 text-pink-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Feeding Suggestion</h2>
+            </div>
+
+            <div className="bg-white/60 rounded-lg p-3 mb-3">
+              <div className="text-sm text-gray-600 mb-1">
+                Last fed: <span className="font-semibold text-gray-900 capitalize">{breastSuggestion.side}</span> breast
+              </div>
+              <div className="text-xs text-gray-500">
+                {formatTimeSince(breastSuggestion.timeSince)} ago
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 h-px bg-pink-200"></div>
+              <div className="text-xs font-semibold text-pink-600 uppercase tracking-wide">
+                Try Next
+              </div>
+              <div className="flex-1 h-px bg-pink-200"></div>
+            </div>
+
+            <button
+              onClick={() => handleQuickLogFeed(`breastfeeding-${breastSuggestion.suggestedSide}`)}
+              className="w-full flex items-center justify-center gap-2 p-4 bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white rounded-xl transition-colors font-semibold shadow-md"
+            >
+              <Baby className="w-6 h-6" />
+              <span className="capitalize">{breastSuggestion.suggestedSide}</span> Breast (Recommended)
+            </button>
+
+            <button
+              onClick={() => navigate('/log-feed')}
+              className="w-full mt-2 text-xs text-gray-600 hover:text-gray-800 py-2"
+            >
+              Or use detailed form →
+            </button>
+          </div>
+        )}
+
         {/* Quick Actions - One-Tap Logging */}
         <div className="card mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Log (Just Now)</h2>

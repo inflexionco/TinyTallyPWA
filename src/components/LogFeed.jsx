@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Baby } from 'lucide-react';
+import { ArrowLeft, Clock, Baby, Star } from 'lucide-react';
 import { feedService } from '../services/db';
 import {
   INPUT_LIMITS,
@@ -15,6 +15,7 @@ export default function LogFeed({ child }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('id');
+  const [breastSuggestion, setBreastSuggestion] = useState(null);
   const [formData, setFormData] = useState({
     type: 'breastfeeding-left',
     timestamp: new Date().toISOString().slice(0, 16),
@@ -31,9 +32,24 @@ export default function LogFeed({ child }) {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    if (editId) {
-      loadFeedData();
-    }
+    const initializeForm = async () => {
+      if (editId) {
+        await loadFeedData();
+      } else {
+        // Load breast suggestion for new entries
+        const suggestion = await feedService.getLastBreastfeedingSide(child.id);
+        if (suggestion) {
+          setBreastSuggestion(suggestion);
+          // Pre-select the suggested breast
+          setFormData(prev => ({
+            ...prev,
+            type: `breastfeeding-${suggestion.suggestedSide}`
+          }));
+        }
+      }
+    };
+
+    initializeForm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
@@ -168,28 +184,59 @@ export default function LogFeed({ child }) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Feed Type
             </label>
+            {breastSuggestion && (
+              <div className="mb-3 p-3 bg-pink-50 border-2 border-pink-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-pink-700">
+                  <Star className="w-4 h-4 fill-pink-500 text-pink-500" />
+                  <span className="font-semibold">
+                    Try <span className="capitalize">{breastSuggestion.suggestedSide}</span> breast next
+                  </span>
+                </div>
+                <div className="text-xs text-pink-600 mt-1 ml-6">
+                  Last: {breastSuggestion.side} breast
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'breastfeeding-left' })}
-                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                className={`p-4 rounded-xl border-2 font-medium transition-all relative ${
                   formData.type === 'breastfeeding-left'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 bg-white text-gray-700'
+                    ? breastSuggestion?.suggestedSide === 'left'
+                      ? 'border-pink-500 bg-pink-50 text-pink-700'
+                      : 'border-blue-500 bg-blue-50 text-blue-700'
+                    : breastSuggestion?.suggestedSide === 'left'
+                      ? 'border-pink-300 bg-pink-50/50 text-gray-700'
+                      : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                Breast (Left)
+                <div className="flex items-center justify-center gap-1">
+                  {breastSuggestion?.suggestedSide === 'left' && (
+                    <Star className="w-4 h-4 fill-pink-500 text-pink-500" />
+                  )}
+                  <span>Breast (Left)</span>
+                </div>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'breastfeeding-right' })}
-                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                className={`p-4 rounded-xl border-2 font-medium transition-all relative ${
                   formData.type === 'breastfeeding-right'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 bg-white text-gray-700'
+                    ? breastSuggestion?.suggestedSide === 'right'
+                      ? 'border-pink-500 bg-pink-50 text-pink-700'
+                      : 'border-blue-500 bg-blue-50 text-blue-700'
+                    : breastSuggestion?.suggestedSide === 'right'
+                      ? 'border-pink-300 bg-pink-50/50 text-gray-700'
+                      : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                Breast (Right)
+                <div className="flex items-center justify-center gap-1">
+                  {breastSuggestion?.suggestedSide === 'right' && (
+                    <Star className="w-4 h-4 fill-pink-500 text-pink-500" />
+                  )}
+                  <span>Breast (Right)</span>
+                </div>
               </button>
               <button
                 type="button"
