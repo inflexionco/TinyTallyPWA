@@ -35,6 +35,9 @@ export default function EventList({ events, onRefresh }) {
   const [repeatingId, setRepeatingId] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [swipedEventId, setSwipedEventId] = useState(null);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
 
   const getStoolColorClasses = (color) => {
     const colorMap = {
@@ -45,6 +48,95 @@ export default function EventList({ events, onRefresh }) {
       red: 'bg-red-100 text-red-800 border border-red-200'
     };
     return colorMap[color] || 'bg-gray-100 text-gray-700 border border-gray-200';
+  };
+
+  // Swipe gesture handlers
+  const minSwipeDistance = 50; // Minimum distance for swipe in pixels
+
+  const onTouchStart = (e, eventId) => {
+    setTouchEnd(null); // Reset touch end
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e, eventId) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = (e, eventId) => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      // Swipe left - show actions
+      setSwipedEventId(eventId);
+    } else if (isRightSwipe) {
+      // Swipe right - close actions
+      setSwipedEventId(null);
+    }
+  };
+
+  const closeSwipe = () => {
+    setSwipedEventId(null);
+  };
+
+  // Wrapper for swipeable event cards
+  const SwipeableCard = ({ event, children, borderColor }) => {
+    const isSwiped = swipedEventId === event.id;
+
+    return (
+      <div className="relative overflow-hidden rounded-xl">
+        {/* Action buttons background - shown when swiped */}
+        {isSwiped && (
+          <div className="absolute inset-0 bg-gradient-to-l from-red-500 to-blue-500 flex items-center justify-end gap-2 px-4">
+            <button
+              onClick={() => {
+                const routeMap = {
+                  feed: '/log-feed',
+                  diaper: '/log-diaper',
+                  sleep: '/log-sleep',
+                  weight: '/log-weight',
+                  medicine: '/log-medicine'
+                };
+                navigate(`${routeMap[event.eventType]}?id=${event.id}`);
+                closeSwipe();
+              }}
+              className="p-3 bg-blue-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform"
+              title="Edit"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => {
+                handleDelete(event);
+                closeSwipe();
+              }}
+              disabled={deletingId === event.id}
+              className="p-3 bg-red-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Main card content - slides left when swiped */}
+        <div
+          onTouchStart={(e) => onTouchStart(e, event.id)}
+          onTouchMove={(e) => onTouchMove(e, event.id)}
+          onTouchEnd={(e) => onTouchEnd(e, event.id)}
+          onClick={() => isSwiped && closeSwipe()}
+          className={`${borderColor} transition-transform duration-200 ease-out ${
+            isSwiped ? '-translate-x-32' : 'translate-x-0'
+          }`}
+          style={{ touchAction: 'pan-y' }}
+        >
+          {children}
+        </div>
+      </div>
+    );
   };
 
   const handleDelete = async (event) => {
@@ -217,7 +309,8 @@ export default function EventList({ events, onRefresh }) {
     };
 
     return (
-      <div className="event-card border-blue-400">
+      <SwipeableCard event={event} borderColor="border-blue-400">
+      <div className="event-card border-blue-400 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <Baby className="w-5 h-5 text-blue-500 flex-shrink-0" />
@@ -236,7 +329,7 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <div className="flex gap-1 items-center">
+          <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
               disabled={repeatingId === event.id}
@@ -263,6 +356,7 @@ export default function EventList({ events, onRefresh }) {
           </div>
         </div>
       </div>
+      </SwipeableCard>
     );
   };
 
@@ -270,7 +364,8 @@ export default function EventList({ events, onRefresh }) {
     const typeLabel = event.type === 'both' ? 'Wet & Dirty' : event.type;
 
     return (
-      <div className="event-card border-green-400">
+      <SwipeableCard event={event} borderColor="border-green-400">
+      <div className="event-card border-green-400 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <Droplet className="w-5 h-5 text-green-500 flex-shrink-0" />
@@ -304,7 +399,7 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <div className="flex gap-1 items-center">
+          <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
               disabled={repeatingId === event.id}
@@ -331,6 +426,7 @@ export default function EventList({ events, onRefresh }) {
           </div>
         </div>
       </div>
+      </SwipeableCard>
     );
   };
 
@@ -342,7 +438,8 @@ export default function EventList({ events, onRefresh }) {
     const typeLabel = event.type === 'nap' ? 'Nap' : 'Night Sleep';
 
     return (
-      <div className="event-card border-purple-400">
+      <SwipeableCard event={event} borderColor="border-purple-400">
+      <div className="event-card border-purple-400 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <Moon className="w-5 h-5 text-purple-500 flex-shrink-0" />
@@ -364,7 +461,7 @@ export default function EventList({ events, onRefresh }) {
               </p>
             </div>
           </div>
-          <div className="flex gap-1 items-center">
+          <div className="hidden md:flex gap-1 items-center">
             {event.endTime && (
               <button
                 onClick={() => handleRepeat(event)}
@@ -393,12 +490,14 @@ export default function EventList({ events, onRefresh }) {
           </div>
         </div>
       </div>
+      </SwipeableCard>
     );
   };
 
   const renderWeightEvent = (event) => {
     return (
-      <div className="event-card border-orange-400">
+      <SwipeableCard event={event} borderColor="border-orange-400">
+      <div className="event-card border-orange-400 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <Scale className="w-5 h-5 text-orange-500 flex-shrink-0" />
@@ -415,7 +514,7 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <div className="flex gap-1 items-center">
+          <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
               disabled={repeatingId === event.id}
@@ -442,12 +541,14 @@ export default function EventList({ events, onRefresh }) {
           </div>
         </div>
       </div>
+      </SwipeableCard>
     );
   };
 
   const renderMedicineEvent = (event) => {
     return (
-      <div className="event-card border-red-400 bg-red-50/30">
+      <SwipeableCard event={event} borderColor="border-red-400">
+      <div className="event-card border-red-400 bg-red-50/30 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <Pill className="w-5 h-5 text-red-500 flex-shrink-0" />
@@ -464,7 +565,7 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
-          <div className="flex gap-1 items-center">
+          <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
               disabled={repeatingId === event.id}
@@ -491,6 +592,7 @@ export default function EventList({ events, onRefresh }) {
           </div>
         </div>
       </div>
+      </SwipeableCard>
     );
   };
 
