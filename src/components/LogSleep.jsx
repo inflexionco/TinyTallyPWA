@@ -20,6 +20,7 @@ export default function LogSleep({ child }) {
   const [endTimeMode, setEndTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
   const [startRecentMinutes, setStartRecentMinutes] = useState(0);
   const [endRecentMinutes, setEndRecentMinutes] = useState(0);
+  const [detailedMode, setDetailedMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -43,9 +44,10 @@ export default function LogSleep({ child }) {
           endTime: sleep.endTime ? new Date(sleep.endTime).toISOString().slice(0, 16) : '',
           notes: sleep.notes || ''
         });
-        // When editing, show custom time mode
+        // When editing, show custom time mode and detailed mode
         setStartTimeMode('custom');
         setEndTimeMode('custom');
+        setDetailedMode(true);
       }
     } catch (error) {
       console.error('Error loading sleep:', error);
@@ -292,6 +294,20 @@ export default function LogSleep({ child }) {
             <h2 className="text-lg font-bold text-gray-900 mb-4">{editId ? 'Edit Sleep' : 'Log Past Sleep'}</h2>
 
             <form onSubmit={handleSubmitPastSleep} className="space-y-4">
+              {/* Mode Toggle - Show in detailed mode only */}
+              {detailedMode && (
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700">Detailed Mode</h3>
+                  <button
+                    type="button"
+                    onClick={() => setDetailedMode(false)}
+                    className="text-sm text-gray-600 hover:text-gray-800"
+                  >
+                    ← Simple Mode
+                  </button>
+                </div>
+              )}
+
               {/* Sleep Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -323,7 +339,8 @@ export default function LogSleep({ child }) {
                 </div>
               </div>
 
-              {/* Start Time */}
+              {/* Start Time - Only in detailed mode */}
+              {detailedMode && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
@@ -450,8 +467,10 @@ export default function LogSleep({ child }) {
                   </div>
                 )}
               </div>
+              )}
 
-              {/* End Time */}
+              {/* End Time - Only in detailed mode */}
+              {detailedMode && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
@@ -578,8 +597,10 @@ export default function LogSleep({ child }) {
                   </div>
                 )}
               </div>
+              )}
 
-              {/* Notes */}
+              {/* Notes - Only in detailed mode */}
+              {detailedMode && (
               <div>
                 <label htmlFor="notes-past" className="block text-sm font-medium text-gray-700 mb-2">
                   Notes (Optional)
@@ -594,6 +615,18 @@ export default function LogSleep({ child }) {
                   placeholder="Add any notes..."
                 />
               </div>
+              )}
+
+              {/* Add Details Button - Only in quick mode */}
+              {!detailedMode && (
+                <button
+                  type="button"
+                  onClick={() => setDetailedMode(true)}
+                  className="w-full p-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition-all font-medium"
+                >
+                  📝 Add Details (times, notes)
+                </button>
+              )}
 
               {/* Submit Buttons */}
               <div className="flex gap-3 pt-2">
