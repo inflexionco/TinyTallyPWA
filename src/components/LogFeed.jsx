@@ -26,6 +26,7 @@ export default function LogFeed({ child }) {
   });
   const [timeMode, setTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
   const [recentMinutes, setRecentMinutes] = useState(0);
+  const [detailedMode, setDetailedMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTimerMode, setIsTimerMode] = useState(false);
   const [timerStartTime, setTimerStartTime] = useState(null);
@@ -67,8 +68,9 @@ export default function LogFeed({ child }) {
           unit: feed.unit || 'oz',
           notes: feed.notes || ''
         });
-        // When editing, show custom time mode
+        // When editing, show custom time mode and detailed mode
         setTimeMode('custom');
+        setDetailedMode(true);
       }
     } catch (error) {
       setToast({ message: 'Failed to load feed data. Please try again.', type: 'error' });
@@ -197,6 +199,20 @@ export default function LogFeed({ child }) {
       {/* Form */}
       <div className="container-safe py-6">
         <form onSubmit={handleSubmit} className="card space-y-6">
+          {/* Mode Toggle - Show in detailed mode only */}
+          {detailedMode && (
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700">Detailed Mode</h3>
+              <button
+                type="button"
+                onClick={() => setDetailedMode(false)}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                ← Simple Mode
+              </button>
+            </div>
+          )}
+
           {/* Feed Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -281,12 +297,13 @@ export default function LogFeed({ child }) {
             </div>
           </div>
 
-          {/* Timestamp */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Clock className="w-4 h-4 inline mr-1" />
-              When did this happen?
-            </label>
+          {/* Timestamp - Only in detailed mode */}
+          {detailedMode && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Clock className="w-4 h-4 inline mr-1" />
+                When did this happen?
+              </label>
 
             {timeMode === 'now' && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
@@ -407,10 +424,11 @@ export default function LogFeed({ child }) {
                 </button>
               </div>
             )}
-          </div>
+            </div>
+          )}
 
-          {/* Duration (for breastfeeding) */}
-          {isBreastfeeding && (
+          {/* Duration (for breastfeeding) - Only in detailed mode */}
+          {detailedMode && isBreastfeeding && (
             <div>
               <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-2">
                 Duration (minutes)
@@ -455,8 +473,8 @@ export default function LogFeed({ child }) {
             </div>
           )}
 
-          {/* Amount (for formula/pumped) */}
-          {!isBreastfeeding && (
+          {/* Amount (for formula/pumped) - Only in detailed mode */}
+          {detailedMode && !isBreastfeeding && (
             <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
                 Amount
@@ -486,21 +504,34 @@ export default function LogFeed({ child }) {
             </div>
           )}
 
-          {/* Notes */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input-field resize-none"
-              rows="3"
-              maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
-              placeholder="Add any additional notes..."
-            />
-          </div>
+          {/* Notes - Only in detailed mode */}
+          {detailedMode && (
+            <div>
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                Notes (Optional)
+              </label>
+              <textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="input-field resize-none"
+                rows="3"
+                maxLength={INPUT_LIMITS.NOTES_MAX_LENGTH}
+                placeholder="Add any additional notes..."
+              />
+            </div>
+          )}
+
+          {/* Add Details Button - Only in quick mode */}
+          {!detailedMode && (
+            <button
+              type="button"
+              onClick={() => setDetailedMode(true)}
+              className="w-full p-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all font-medium"
+            >
+              📝 Add Details (time, duration/amount, notes)
+            </button>
+          )}
 
           {/* Submit Buttons */}
           <div className="flex gap-3 pt-4">
