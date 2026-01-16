@@ -20,6 +20,16 @@ db.version(2).stores({
   weight: '++id, childId, timestamp, weight, unit, notes'
 });
 
+// Version 3: Add medicine tracking
+db.version(3).stores({
+  child: '++id, name, dateOfBirth',
+  feeds: '++id, childId, timestamp, type, duration, amount, unit, notes',
+  diapers: '++id, childId, timestamp, type, wetness, consistency, color, quantity, notes',
+  sleep: '++id, childId, startTime, endTime, type, notes',
+  weight: '++id, childId, timestamp, weight, unit, notes',
+  medicines: '++id, childId, timestamp, name, dose, unit, frequency, maxDailyDoses, notes'
+});
+
 // Child Profile Service
 export const childService = {
   async getChild() {
@@ -316,6 +326,145 @@ export const weightService = {
   }
 };
 
+// Common Medicines Preset
+export const COMMON_MEDICINES = [
+  { name: 'Vitamin D', defaultDose: 0.5, unit: 'ml', frequency: 'daily', maxDailyDoses: 1, minHoursBetween: 24 },
+  { name: 'Gas Drops (Simethicone)', defaultDose: 0.6, unit: 'ml', frequency: 'as-needed', maxDailyDoses: 12, minHoursBetween: 0.5 },
+  { name: 'Tylenol (Infant)', defaultDose: 1.25, unit: 'ml', frequency: '4-hours', maxDailyDoses: 5, minHoursBetween: 4 },
+  { name: 'Motrin (Infant)', defaultDose: 1.25, unit: 'ml', frequency: '6-hours', maxDailyDoses: 4, minHoursBetween: 6 },
+  { name: 'Gripe Water', defaultDose: 5, unit: 'ml', frequency: 'as-needed', maxDailyDoses: 6, minHoursBetween: 0.5 },
+  { name: 'Probiotic Drops', defaultDose: 5, unit: 'drops', frequency: 'daily', maxDailyDoses: 1, minHoursBetween: 24 },
+];
+
+// Medicine Tracking Service
+export const medicineService = {
+  async addMedicine(medicineData) {
+    return await db.medicines.add({
+      childId: medicineData.childId || 1,
+      timestamp: medicineData.timestamp || new Date(),
+      name: medicineData.name,
+      dose: medicineData.dose,
+      unit: medicineData.unit || 'ml',
+      frequency: medicineData.frequency || 'as-needed',
+      maxDailyDoses: medicineData.maxDailyDoses || null,
+      notes: medicineData.notes || '',
+      createdAt: new Date()
+    });
+  },
+
+  async getMedicines(childId, startDate, endDate) {
+    let query = db.medicines.where('childId').equals(childId || 1);
+
+    if (startDate && endDate) {
+      return await query
+        .filter(medicine => medicine.timestamp >= startDate && medicine.timestamp <= endDate)
+        .reverse()
+        .sortBy('timestamp');
+    }
+
+    return await query.reverse().sortBy('timestamp');
+  },
+
+  async getTodayMedicines(childId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return await this.getMedicines(childId, today, tomorrow);
+  },
+
+  async getRecentMedicines(childId, hours = 24) {
+    const now = new Date();
+    const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000);
+
+    return await db.medicines
+      .where('childId')
+      .equals(childId || 1)
+      .filter(medicine => medicine.timestamp >= startTime)
+      .reverse()
+      .sortBy('timestamp');
+  },
+
+  async getLastMedicine(childId, medicineName = null) {
+    let query = db.medicines
+      .where('childId')
+      .equals(childId || 1);
+
+    if (medicineName) {
+      const medicines = await query
+        .filter(medicine => medicine.name === medicineName)
+        .reverse()
+        .sortBy('timestamp');
+      return medicines.length > 0 ? medicines[0] : null;
+    }
+
+    const medicines = await query.reverse().sortBy('timestamp');
+    return medicines.length > 0 ? medicines[0] : null;
+  },
+
+  async getMedicine(id) {
+    return await db.medicines.get(id);
+  },
+
+  async deleteMedicine(id) {
+    return await db.medicines.delete(id);
+  },
+
+  async updateMedicine(id, medicineData) {
+    return await db.medicines.update(id, medicineData);
+  },
+
+  // Safety check: Check if it's safe to give medicine based on timing
+  async checkSafetyWarnings(childId, medicineName) {
+    const medicineConfig = COMMON_MEDICINES.find(m => m.name === medicineName);
+    if (!medicineConfig) return null;
+
+    const todayMedicines = await this.getTodayMedicines(childId);
+    const sameMedicineToday = todayMedicines.filter(m => m.name === medicineName);
+
+    const warnings = [];
+
+    // Check daily max doses
+    if (medicineConfig.maxDailyDoses && sameMedicineToday.length >= medicineConfig.maxDailyDoses) {
+      warnings.push({
+        severity: 'high',
+        message: `Daily limit reached: ${medicineConfig.maxDailyDoses} doses per day`
+      });
+    }
+
+    // Check minimum time between doses
+    if (medicineConfig.minHoursBetween && sameMedicineToday.length > 0) {
+      const lastDose = sameMedicineToday[0];
+      const hoursSinceLastDose = (Date.now() - new Date(lastDose.timestamp).getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceLastDose < medicineConfig.minHoursBetween) {
+        const hoursRemaining = (medicineConfig.minHoursBetween - hoursSinceLastDose).toFixed(1);
+        warnings.push({
+          severity: hoursSinceLastDose < medicineConfig.minHoursBetween * 0.5 ? 'high' : 'medium',
+          message: `Too soon: Wait ${hoursRemaining} more hours (${medicineConfig.minHoursBetween}h minimum between doses)`
+        });
+      }
+    }
+
+    return warnings.length > 0 ? warnings : null;
+  },
+
+  // Get next recommended dose time
+  async getNextDoseTime(childId, medicineName) {
+    const medicineConfig = COMMON_MEDICINES.find(m => m.name === medicineName);
+    if (!medicineConfig || !medicineConfig.minHoursBetween) return null;
+
+    const lastDose = await this.getLastMedicine(childId, medicineName);
+    if (!lastDose) return new Date(); // Can give now if never given
+
+    const nextDoseTime = new Date(lastDose.timestamp);
+    nextDoseTime.setHours(nextDoseTime.getHours() + medicineConfig.minHoursBetween);
+
+    return nextDoseTime;
+  }
+};
+
 // Stats Service for Dashboard
 export const statsService = {
   async getDailyStats(childId, date) {
@@ -328,6 +477,7 @@ export const statsService = {
     const diapers = await diaperService.getDiapers(childId, startDate, endDate);
     const sleeps = await sleepService.getSleep(childId, startDate, endDate);
     const weights = await weightService.getWeights(childId, startDate, endDate);
+    const medicines = await medicineService.getMedicines(childId, startDate, endDate);
 
     // Calculate total sleep duration
     const totalSleepMinutes = sleeps.reduce((total, sleep) => {
@@ -350,10 +500,12 @@ export const statsService = {
       totalSleeps: sleeps.length,
       totalSleepHours: (totalSleepMinutes / 60).toFixed(1),
       totalWeights: weights.length,
+      totalMedicines: medicines.length,
       feeds,
       diapers,
       sleeps,
-      weights
+      weights,
+      medicines
     };
   }
 };

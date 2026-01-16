@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Baby, Droplet, Moon, Scale, History, Settings, RefreshCw } from 'lucide-react';
-import { feedService, diaperService, sleepService, weightService, statsService } from '../services/db';
+import { Baby, Droplet, Moon, Scale, Pill, History, Settings, RefreshCw } from 'lucide-react';
+import { feedService, diaperService, sleepService, weightService, medicineService, statsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
 import Toast from './Toast';
@@ -14,6 +14,7 @@ export default function Dashboard({ child }) {
   const [lastDiaper, setLastDiaper] = useState(null);
   const [lastSleep, setLastSleep] = useState(null);
   const [lastWeight, setLastWeight] = useState(null);
+  const [lastMedicine, setLastMedicine] = useState(null);
   const [activeSleep, setActiveSleep] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -28,12 +29,13 @@ export default function Dashboard({ child }) {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, activeSleepData, breastSuggestionData] = await Promise.all([
+      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, lastMedicineData, activeSleepData, breastSuggestionData] = await Promise.all([
         statsService.getDailyStats(child.id, new Date()),
         feedService.getLastFeed(child.id),
         diaperService.getLastDiaper(child.id),
         sleepService.getLastSleep(child.id),
         weightService.getLastWeight(child.id),
+        medicineService.getLastMedicine(child.id),
         sleepService.getActiveSleep(child.id),
         feedService.getLastBreastfeedingSide(child.id)
       ]);
@@ -43,6 +45,7 @@ export default function Dashboard({ child }) {
       setLastDiaper(lastDiaperData);
       setLastSleep(lastSleepData);
       setLastWeight(lastWeightData);
+      setLastMedicine(lastMedicineData);
       setActiveSleep(activeSleepData);
       setBreastSuggestion(breastSuggestionData);
 
@@ -51,7 +54,8 @@ export default function Dashboard({ child }) {
         ...statsData.feeds.map(f => ({ ...f, eventType: 'feed' })),
         ...statsData.diapers.map(d => ({ ...d, eventType: 'diaper' })),
         ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' })),
-        ...statsData.weights.map(w => ({ ...w, eventType: 'weight' }))
+        ...statsData.weights.map(w => ({ ...w, eventType: 'weight' })),
+        ...statsData.medicines.map(m => ({ ...m, eventType: 'medicine' }))
       ].sort((a, b) => {
         const timeA = a.timestamp || a.startTime;
         const timeB = b.timestamp || b.startTime;
@@ -438,6 +442,14 @@ export default function Dashboard({ child }) {
             <Scale className="w-8 h-8 text-orange-500" />
             <span className="text-sm font-semibold text-gray-700">Weight</span>
           </button>
+
+          <button
+            onClick={() => navigate('/log-medicine')}
+            className="btn-quick-log border-2 border-red-200"
+          >
+            <Pill className="w-8 h-8 text-red-500" />
+            <span className="text-sm font-semibold text-gray-700">Medicine</span>
+          </button>
         </div>
 
         {/* Last Activity Summary */}
@@ -547,6 +559,30 @@ export default function Dashboard({ child }) {
                 </div>
                 <div className="text-xs text-gray-500">
                   {formatTimeAgo(lastWeight.timestamp)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {lastMedicine && (
+            <div className="flex items-center justify-between py-2 border-t border-gray-100">
+              <div className="flex items-center gap-3">
+                <Pill className="w-5 h-5 text-red-500" />
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {lastMedicine.name}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {lastMedicine.dose} {lastMedicine.unit}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-medium text-gray-900">
+                  {formatTime(lastMedicine.timestamp)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {formatTimeAgo(lastMedicine.timestamp)}
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ import LogFeed from './components/LogFeed';
 import LogDiaper from './components/LogDiaper';
 import LogSleep from './components/LogSleep';
 import LogWeight from './components/LogWeight';
+import LogMedicine from './components/LogMedicine';
 import History from './components/History';
 import Settings from './components/Settings';
 
@@ -56,6 +57,7 @@ function App() {
         <Route path="/log-diaper" element={<LogDiaper child={child} />} />
         <Route path="/log-sleep" element={<LogSleep child={child} />} />
         <Route path="/log-weight" element={<LogWeight child={child} />} />
+        <Route path="/log-medicine" element={<LogMedicine child={child} />} />
         <Route path="/history" element={<History child={child} />} />
         <Route path="/settings" element={<Settings child={child} onChildUpdated={loadChild} />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,7 +1,7 @@
-import { Baby, Droplet, Moon, Scale, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Baby, Droplet, Moon, Scale, Pill, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
-import { feedService, diaperService, sleepService, weightService } from '../services/db';
+import { feedService, diaperService, sleepService, weightService, medicineService } from '../services/db';
 import { useState } from 'react';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
@@ -44,6 +44,8 @@ export default function EventList({ events, onRefresh }) {
             await sleepService.deleteSleep(event.id);
           } else if (event.eventType === 'weight') {
             await weightService.deleteWeight(event.id);
+          } else if (event.eventType === 'medicine') {
+            await medicineService.deleteMedicine(event.id);
           }
 
           setToast({ message: 'Entry deleted successfully', type: 'success' });
@@ -135,6 +137,19 @@ export default function EventList({ events, onRefresh }) {
         newId = await weightService.addWeight(weightData);
 
         eventDescription = `Weight - ${event.weight} ${event.unit}`;
+      } else if (event.eventType === 'medicine') {
+        const medicineData = {
+          childId: event.childId,
+          timestamp: new Date(),
+          name: event.name,
+          dose: event.dose,
+          unit: event.unit,
+          frequency: event.frequency,
+          notes: event.notes || ''
+        };
+        newId = await medicineService.addMedicine(medicineData);
+
+        eventDescription = `${event.name} - ${event.dose} ${event.unit}`;
       }
 
       setToast({
@@ -152,6 +167,8 @@ export default function EventList({ events, onRefresh }) {
               await sleepService.deleteSleep(newId);
             } else if (event.eventType === 'weight') {
               await weightService.deleteWeight(newId);
+            } else if (event.eventType === 'medicine') {
+              await medicineService.deleteMedicine(newId);
             }
             await onRefresh();
             setToast({ message: 'Repeat cancelled', type: 'info' });
@@ -399,6 +416,55 @@ export default function EventList({ events, onRefresh }) {
     );
   };
 
+  const renderMedicineEvent = (event) => {
+    return (
+      <div className="event-card border-red-400 bg-red-50/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Pill className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-gray-900">{event.name}</span>
+                <span className="badge bg-red-100 text-red-700 border border-red-200">
+                  {event.dose} {event.unit}
+                </span>
+              </div>
+              {event.notes && (
+                <p className="text-sm text-gray-600 mt-1 break-words">{event.notes}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
+            </div>
+          </div>
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={() => handleRepeat(event)}
+              disabled={repeatingId === event.id}
+              className="p-2 text-gray-400 hover:text-green-500 active:scale-95 transition-all flex-shrink-0"
+              title="Repeat (log again now)"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate(`/log-medicine?id=${event.id}`)}
+              className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              disabled={deletingId === event.id}
+              className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="space-y-3">
@@ -411,6 +477,8 @@ export default function EventList({ events, onRefresh }) {
             return <div key={`sleep-${event.id}`}>{renderSleepEvent(event)}</div>;
           } else if (event.eventType === 'weight') {
             return <div key={`weight-${event.id}`}>{renderWeightEvent(event)}</div>;
+          } else if (event.eventType === 'medicine') {
+            return <div key={`medicine-${event.id}`}>{renderMedicineEvent(event)}</div>;
           }
           return null;
         })}
