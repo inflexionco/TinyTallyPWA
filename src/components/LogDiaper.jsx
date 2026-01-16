@@ -6,6 +6,29 @@ import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputVal
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
+// Visual indicators for stool characteristics
+const CONSISTENCY_ICONS = {
+  liquid: '💧',
+  soft: '🌊',
+  seedy: '🌾',
+  formed: '🥖',
+  hard: '🪨'
+};
+
+const COLOR_ICONS = {
+  yellow: '🟡',
+  green: '🟢',
+  brown: '🟤',
+  black: '⚫',
+  red: '🔴'
+};
+
+const QUANTITY_ICONS = {
+  small: '○',
+  medium: '◉',
+  large: '⬤'
+};
+
 export default function LogDiaper({ child }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -383,7 +406,10 @@ export default function LogDiaper({ child }) {
                           : 'border-gray-200 bg-white text-gray-700'
                       }`}
                     >
-                      {cons}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-2xl">{CONSISTENCY_ICONS[cons]}</span>
+                        <span className="text-xs">{cons}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -406,7 +432,10 @@ export default function LogDiaper({ child }) {
                           : 'border-gray-200 bg-white text-gray-700'
                       }`}
                     >
-                      {col}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-2xl">{COLOR_ICONS[col]}</span>
+                        <span className="text-xs">{col}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -429,7 +458,10 @@ export default function LogDiaper({ child }) {
                           : 'border-gray-200 bg-white text-gray-700'
                       }`}
                     >
-                      {qty}
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-2xl">{QUANTITY_ICONS[qty]}</span>
+                        <span className="text-xs">{qty}</span>
+                      </div>
                     </button>
                   ))}
                 </div>

@@ -6,6 +6,29 @@ import { useState } from 'react';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
+// Visual indicators for stool characteristics
+const CONSISTENCY_ICONS = {
+  liquid: '💧',
+  soft: '🌊',
+  seedy: '🌾',
+  formed: '🥖',
+  hard: '🪨'
+};
+
+const COLOR_ICONS = {
+  yellow: '🟡',
+  green: '🟢',
+  brown: '🟤',
+  black: '⚫',
+  red: '🔴'
+};
+
+const QUANTITY_ICONS = {
+  small: '○',
+  medium: '◉',
+  large: '⬤'
+};
+
 export default function EventList({ events, onRefresh }) {
   const navigate = useNavigate();
   const [deletingId, setDeletingId] = useState(null);
@@ -260,13 +283,19 @@ export default function EventList({ events, onRefresh }) {
                   <span className="badge badge-diaper capitalize">{event.wetness}</span>
                 )}
                 {event.consistency && (
-                  <span className="badge badge-diaper capitalize">{event.consistency}</span>
+                  <span className="badge badge-diaper capitalize">
+                    {CONSISTENCY_ICONS[event.consistency]} {event.consistency}
+                  </span>
                 )}
                 {event.color && (
-                  <span className={`badge capitalize ${getStoolColorClasses(event.color)}`}>{event.color}</span>
+                  <span className={`badge capitalize ${getStoolColorClasses(event.color)}`}>
+                    {COLOR_ICONS[event.color]} {event.color}
+                  </span>
                 )}
                 {event.quantity && (
-                  <span className="badge badge-diaper capitalize">{event.quantity}</span>
+                  <span className="badge badge-diaper capitalize">
+                    {QUANTITY_ICONS[event.quantity]} {event.quantity}
+                  </span>
                 )}
               </div>
               {event.notes && (
