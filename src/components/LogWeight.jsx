@@ -17,6 +17,7 @@ export default function LogWeight({ child }) {
   });
   const [timeMode, setTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
   const [recentMinutes, setRecentMinutes] = useState(0);
+  const [detailedMode, setDetailedMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(!!editId);
   const [toast, setToast] = useState(null);
@@ -38,8 +39,9 @@ export default function LogWeight({ child }) {
           unit: weight.unit,
           notes: weight.notes || ''
         });
-        // When editing, show custom time mode
+        // When editing, show custom time mode and detailed mode
         setTimeMode('custom');
+        setDetailedMode(true);
       }
     } catch (error) {
       console.error('Error loading weight:', error);
@@ -137,7 +139,67 @@ export default function LogWeight({ child }) {
       {/* Form */}
       <div className="container-safe py-6">
         <form onSubmit={handleSubmit} className="card space-y-6">
-          {/* Timestamp */}
+          {/* Mode Toggle - Show in detailed mode only */}
+          {detailedMode && (
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700">Detailed Mode</h3>
+              <button
+                type="button"
+                onClick={() => setDetailedMode(false)}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                ← Simple Mode
+              </button>
+            </div>
+          )}
+
+          {/* Weight */}
+          <div>
+            <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-2">
+              Weight
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                id="weight"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                className="input-field flex-1"
+                placeholder="Enter weight"
+                min="0"
+                max={INPUT_LIMITS.WEIGHT_MAX}
+                step="0.01"
+                required
+              />
+              <select
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                className="select-field w-24"
+              >
+                <option value="kg">kg</option>
+                <option value="lbs">lbs</option>
+                <option value="g">g</option>
+              </select>
+            </div>
+
+            {/* Helpful conversion info */}
+            {formData.weight && (
+              <div className="mt-2 text-sm text-gray-600">
+                {formData.unit === 'kg' && (
+                  <span>≈ {(parseFloat(formData.weight) * 2.20462).toFixed(2)} lbs</span>
+                )}
+                {formData.unit === 'lbs' && (
+                  <span>≈ {(parseFloat(formData.weight) / 2.20462).toFixed(2)} kg</span>
+                )}
+                {formData.unit === 'g' && (
+                  <span>≈ {(parseFloat(formData.weight) / 1000).toFixed(2)} kg</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Timestamp - Only in detailed mode */}
+          {detailedMode && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Clock className="w-4 h-4 inline mr-1" />
@@ -264,53 +326,10 @@ export default function LogWeight({ child }) {
               </div>
             )}
           </div>
+          )}
 
-          {/* Weight */}
-          <div>
-            <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-2">
-              Weight
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                id="weight"
-                value={formData.weight}
-                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                className="input-field flex-1"
-                placeholder="Enter weight"
-                min="0"
-                max={INPUT_LIMITS.WEIGHT_MAX}
-                step="0.01"
-                required
-              />
-              <select
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                className="select-field w-24"
-              >
-                <option value="kg">kg</option>
-                <option value="lbs">lbs</option>
-                <option value="g">g</option>
-              </select>
-            </div>
-
-            {/* Helpful conversion info */}
-            {formData.weight && (
-              <div className="mt-2 text-sm text-gray-600">
-                {formData.unit === 'kg' && (
-                  <span>≈ {(parseFloat(formData.weight) * 2.20462).toFixed(2)} lbs</span>
-                )}
-                {formData.unit === 'lbs' && (
-                  <span>≈ {(parseFloat(formData.weight) / 2.20462).toFixed(2)} kg</span>
-                )}
-                {formData.unit === 'g' && (
-                  <span>≈ {(parseFloat(formData.weight) / 1000).toFixed(2)} kg</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Notes */}
+          {/* Notes - Only in detailed mode */}
+          {detailedMode && (
           <div>
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
               Notes (Optional)
@@ -325,6 +344,18 @@ export default function LogWeight({ child }) {
               placeholder="Add any additional notes..."
             />
           </div>
+          )}
+
+          {/* Add Details Button - Only in quick mode */}
+          {!detailedMode && (
+            <button
+              type="button"
+              onClick={() => setDetailedMode(true)}
+              className="w-full p-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-600 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all font-medium"
+            >
+              📝 Add Details (time, notes)
+            </button>
+          )}
 
           {/* Submit Buttons */}
           <div className="flex gap-3 pt-4">
