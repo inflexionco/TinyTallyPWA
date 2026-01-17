@@ -5,6 +5,7 @@ import { feedService, diaperService, sleepService, weightService, medicineServic
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
 import Toast from './Toast';
+import BatchNightLogging from './BatchNightLogging';
 
 export default function Dashboard({ child }) {
   const navigate = useNavigate();
@@ -21,9 +22,11 @@ export default function Dashboard({ child }) {
   const [lastQuickLogId, setLastQuickLogId] = useState(null);
   const [breastSuggestion, setBreastSuggestion] = useState(null);
   const [feedingPattern, setFeedingPattern] = useState(null);
+  const [showBatchNightLog, setShowBatchNightLog] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
+    checkForOvernightGap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child]);
 
@@ -95,6 +98,52 @@ export default function Dashboard({ child }) {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
+  };
+
+  const checkForOvernightGap = async () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Only show between 7 AM - 10 AM
+    if (currentHour < 7 || currentHour > 10) return;
+
+    // Check if batch log prompt already dismissed today
+    const dismissedToday = localStorage.getItem('batchLogDismissed');
+    if (dismissedToday === now.toDateString()) return;
+
+    try {
+      // Check for overnight gap (10 PM yesterday - 6 AM today)
+      const yesterday10pm = new Date(now);
+      yesterday10pm.setDate(yesterday10pm.getDate() - 1);
+      yesterday10pm.setHours(22, 0, 0, 0);
+
+      const today6am = new Date(now);
+      today6am.setHours(6, 0, 0, 0);
+
+      // Check feeds and diapers in that window
+      const [overnightFeeds, overnightDiapers] = await Promise.all([
+        feedService.getFeeds(child.id, yesterday10pm, today6am),
+        diaperService.getDiapers(child.id, yesterday10pm, today6am)
+      ]);
+
+      // If less than 2 total entries overnight, suggest batch logging
+      if (overnightFeeds.length + overnightDiapers.length < 2) {
+        setShowBatchNightLog(true);
+      }
+    } catch (error) {
+      console.error('Error checking overnight gap:', error);
+    }
+  };
+
+  const handleBatchNightLogDismiss = () => {
+    const now = new Date();
+    localStorage.setItem('batchLogDismissed', now.toDateString());
+    setShowBatchNightLog(false);
+  };
+
+  const handleBatchNightLogComplete = () => {
+    setShowBatchNightLog(false);
+    loadDashboardData(); // Refresh to show new entries
   };
 
   // Quick-log functions for one-tap logging
@@ -693,6 +742,15 @@ export default function Dashboard({ child }) {
           onClose={() => setToast(null)}
           duration={5000}
           action={toast.action}
+        />
+      )}
+
+      {/* Batch Night Logging Modal */}
+      {showBatchNightLog && (
+        <BatchNightLogging
+          child={child}
+          onComplete={handleBatchNightLogComplete}
+          onDismiss={handleBatchNightLogDismiss}
         />
       )}
     </div>
