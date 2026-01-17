@@ -41,6 +41,18 @@ db.version(4).stores({
   pumping: '++id, childId, timestamp, side, duration, amount, unit, storageLocation, notes'
 });
 
+// Version 5: Add tummy time tracking
+db.version(5).stores({
+  child: '++id, name, dateOfBirth',
+  feeds: '++id, childId, timestamp, type, duration, amount, unit, notes',
+  diapers: '++id, childId, timestamp, type, wetness, consistency, color, quantity, notes',
+  sleep: '++id, childId, startTime, endTime, type, notes',
+  weight: '++id, childId, timestamp, weight, unit, notes',
+  medicines: '++id, childId, timestamp, name, dose, unit, frequency, maxDailyDoses, notes',
+  pumping: '++id, childId, timestamp, side, duration, amount, unit, storageLocation, notes',
+  tummyTime: '++id, childId, startTime, endTime, duration, notes'
+});
+
 // Child Profile Service
 export const childService = {
   async getChild() {
@@ -637,6 +649,109 @@ export const pumpingService = {
   }
 };
 
+// Tummy Time Tracking Service
+export const tummyTimeService = {
+  async addTummyTime(tummyTimeData) {
+    return await db.tummyTime.add({
+      childId: tummyTimeData.childId || 1,
+      startTime: tummyTimeData.startTime || new Date(),
+      endTime: tummyTimeData.endTime || null,
+      duration: tummyTimeData.duration || null, // in minutes
+      notes: tummyTimeData.notes || '',
+      createdAt: new Date()
+    });
+  },
+
+  async getTummyTime(childId, startDate, endDate) {
+    let query = db.tummyTime.where('childId').equals(childId || 1);
+
+    if (startDate && endDate) {
+      return await query
+        .filter(tummyTime => tummyTime.startTime >= startDate && tummyTime.startTime <= endDate)
+        .reverse()
+        .sortBy('startTime');
+    }
+
+    return await query.reverse().sortBy('startTime');
+  },
+
+  async getTodayTummyTime(childId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return await this.getTummyTime(childId, today, tomorrow);
+  },
+
+  async getActiveTummyTime(childId) {
+    const tummyTimes = await db.tummyTime
+      .where('childId')
+      .equals(childId || 1)
+      .filter(tt => !tt.endTime)
+      .reverse()
+      .sortBy('startTime');
+
+    return tummyTimes.length > 0 ? tummyTimes[0] : null;
+  },
+
+  async getLastTummyTime(childId) {
+    const tummyTimes = await db.tummyTime
+      .where('childId')
+      .equals(childId || 1)
+      .reverse()
+      .sortBy('startTime');
+
+    return tummyTimes.length > 0 ? tummyTimes[0] : null;
+  },
+
+  async getTummyTimeById(id) {
+    return await db.tummyTime.get(id);
+  },
+
+  async endTummyTime(id, endTime) {
+    const tt = await this.getTummyTimeById(id);
+    if (!tt) return;
+
+    const end = endTime || new Date();
+    const duration = Math.round((end - new Date(tt.startTime)) / 1000 / 60); // minutes
+
+    return await db.tummyTime.update(id, {
+      endTime: end,
+      duration: duration
+    });
+  },
+
+  async deleteTummyTime(id) {
+    return await db.tummyTime.delete(id);
+  },
+
+  async updateTummyTime(id, tummyTimeData) {
+    return await db.tummyTime.update(id, tummyTimeData);
+  },
+
+  // Get total tummy time for a date range
+  async getTotalTummyTime(childId, startDate, endDate) {
+    const tummyTimes = await this.getTummyTime(childId, startDate, endDate);
+
+    const totalMinutes = tummyTimes.reduce((total, tt) => {
+      if (tt.endTime) {
+        const duration = (new Date(tt.endTime) - new Date(tt.startTime)) / 1000 / 60;
+        return total + duration;
+      }
+      return total;
+    }, 0);
+
+    return {
+      totalMinutes: Math.round(totalMinutes),
+      totalHours: Math.round((totalMinutes / 60) * 10) / 10,
+      count: tummyTimes.filter(tt => tt.endTime).length,
+      dailyGoal: 30, // Recommended 30-60 minutes
+      goalProgress: Math.min(Math.round((totalMinutes / 30) * 100), 100)
+    };
+  }
+};
+
 // Stats Service for Dashboard
 export const statsService = {
   async getDailyStats(childId, date) {
@@ -651,6 +766,7 @@ export const statsService = {
     const weights = await weightService.getWeights(childId, startDate, endDate);
     const medicines = await medicineService.getMedicines(childId, startDate, endDate);
     const pumpings = await pumpingService.getPumping(childId, startDate, endDate);
+    const tummyTimes = await tummyTimeService.getTummyTime(childId, startDate, endDate);
 
     // Calculate total sleep duration
     const totalSleepMinutes = sleeps.reduce((total, sleep) => {
@@ -668,6 +784,9 @@ export const statsService = {
     // Calculate total pumped
     const totalPumped = await pumpingService.getTotalPumpedAmount(childId, startDate, endDate);
 
+    // Calculate total tummy time
+    const totalTummyTime = await tummyTimeService.getTotalTummyTime(childId, startDate, endDate);
+
     return {
       totalFeeds: feeds.length,
       totalDiapers: diapers.length,
@@ -679,12 +798,15 @@ export const statsService = {
       totalMedicines: medicines.length,
       totalPumpings: pumpings.length,
       totalPumpedOz: totalPumped.totalOz,
+      totalTummyTimeMinutes: totalTummyTime.totalMinutes,
+      tummyTimeGoalProgress: totalTummyTime.goalProgress,
       feeds,
       diapers,
       sleeps,
       weights,
       medicines,
-      pumpings
+      pumpings,
+      tummyTimes
     };
   },
 
@@ -695,6 +817,7 @@ export const statsService = {
     const weights = await weightService.getWeights(childId, startDate, endDate);
     const medicines = await medicineService.getMedicines(childId, startDate, endDate);
     const pumpings = await pumpingService.getPumping(childId, startDate, endDate);
+    const tummyTimes = await tummyTimeService.getTummyTime(childId, startDate, endDate);
 
     // Collect all unique dates with activity
     const datesSet = new Set();
@@ -726,6 +849,11 @@ export const statsService = {
 
     pumpings.forEach(p => {
       const dateStr = new Date(p.timestamp).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    tummyTimes.forEach(tt => {
+      const dateStr = new Date(tt.startTime).toDateString();
       datesSet.add(dateStr);
     });
 

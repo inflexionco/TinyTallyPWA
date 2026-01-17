@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Baby, Droplet, Moon, Scale, Pill, Droplets, History, Settings, RefreshCw } from 'lucide-react';
-import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, statsService } from '../services/db';
+import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
+import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
 import Toast from './Toast';
@@ -62,7 +62,8 @@ export default function Dashboard({ child }) {
         ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' })),
         ...statsData.weights.map(w => ({ ...w, eventType: 'weight' })),
         ...statsData.medicines.map(m => ({ ...m, eventType: 'medicine' })),
-        ...statsData.pumpings.map(p => ({ ...p, eventType: 'pumping' }))
+        ...statsData.pumpings.map(p => ({ ...p, eventType: 'pumping' })),
+        ...statsData.tummyTimes.map(tt => ({ ...tt, eventType: 'tummyTime' }))
       ].sort((a, b) => {
         const timeA = a.timestamp || a.startTime;
         const timeB = b.timestamp || b.startTime;
@@ -518,6 +519,18 @@ export default function Dashboard({ child }) {
             </button>
           </div>
 
+          {/* Tummy Time Quick Action */}
+          <div className="mb-4">
+            <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Tummy Time</div>
+            <button
+              onClick={() => navigate('/log-tummy-time')}
+              className="w-full flex items-center justify-center gap-2 p-4 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 rounded-xl transition-colors border-2 border-emerald-200"
+            >
+              <Timer className="w-6 h-6 text-emerald-500" />
+              <span className="text-sm font-semibold text-gray-700">Log Tummy Time</span>
+            </button>
+          </div>
+
           {/* Sleep Quick Actions */}
           <div>
             <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Sleep</div>
@@ -589,6 +602,14 @@ export default function Dashboard({ child }) {
           >
             <Pill className="w-8 h-8 text-red-500" />
             <span className="text-sm font-semibold text-gray-700">Medicine</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/log-tummy-time')}
+            className="btn-quick-log border-2 border-emerald-200"
+          >
+            <Timer className="w-8 h-8 text-emerald-500" />
+            <span className="text-sm font-semibold text-gray-700">Tummy Time</span>
           </button>
         </div>
 

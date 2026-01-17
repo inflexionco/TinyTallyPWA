@@ -9,6 +9,7 @@ import LogSleep from './components/LogSleep';
 import LogWeight from './components/LogWeight';
 import LogMedicine from './components/LogMedicine';
 import LogPumping from './components/LogPumping';
+import LogTummyTime from './components/LogTummyTime';
 import History from './components/History';
 import Settings from './components/Settings';
 
@@ -60,6 +61,7 @@ function App() {
         <Route path="/log-weight" element={<LogWeight child={child} />} />
         <Route path="/log-medicine" element={<LogMedicine child={child} />} />
         <Route path="/log-pumping" element={<LogPumping child={child} />} />
+        <Route path="/log-tummy-time" element={<LogTummyTime child={child} />} />
         <Route path="/history" element={<History child={child} />} />
         <Route path="/settings" element={<Settings child={child} onChildUpdated={loadChild} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
