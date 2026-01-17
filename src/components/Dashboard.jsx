@@ -20,6 +20,7 @@ export default function Dashboard({ child }) {
   const [toast, setToast] = useState(null);
   const [lastQuickLogId, setLastQuickLogId] = useState(null);
   const [breastSuggestion, setBreastSuggestion] = useState(null);
+  const [feedingPattern, setFeedingPattern] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -29,7 +30,7 @@ export default function Dashboard({ child }) {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, lastMedicineData, activeSleepData, breastSuggestionData] = await Promise.all([
+      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, lastMedicineData, activeSleepData, breastSuggestionData, feedingPatternData] = await Promise.all([
         statsService.getDailyStats(child.id, new Date()),
         feedService.getLastFeed(child.id),
         diaperService.getLastDiaper(child.id),
@@ -37,7 +38,8 @@ export default function Dashboard({ child }) {
         weightService.getLastWeight(child.id),
         medicineService.getLastMedicine(child.id),
         sleepService.getActiveSleep(child.id),
-        feedService.getLastBreastfeedingSide(child.id)
+        feedService.getLastBreastfeedingSide(child.id),
+        feedService.detectFeedingPattern(child.id, 7)
       ]);
 
       setStats(statsData);
@@ -48,6 +50,7 @@ export default function Dashboard({ child }) {
       setLastMedicine(lastMedicineData);
       setActiveSleep(activeSleepData);
       setBreastSuggestion(breastSuggestionData);
+      setFeedingPattern(feedingPatternData);
 
       // Combine all events and sort by time
       const allEvents = [
@@ -315,6 +318,81 @@ export default function Dashboard({ child }) {
             >
               Or use detailed form →
             </button>
+          </div>
+        )}
+
+        {/* Feeding Pattern Widget */}
+        {feedingPattern && feedingPattern.totalFeeds >= 3 && (
+          <div className="card mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Baby className="w-5 h-5 text-blue-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Feeding Pattern</h2>
+              <span className="text-xs text-gray-500 ml-auto">Last {feedingPattern.daysAnalyzed} days</span>
+            </div>
+
+            <div className="space-y-3">
+              {/* Average Interval */}
+              {feedingPattern.avgIntervalHours && (
+                <div className="bg-white/60 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-1">Average Interval</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {feedingPattern.avgIntervalHours < 1
+                      ? `${feedingPattern.avgIntervalMinutes} min`
+                      : `${feedingPattern.avgIntervalHours} hours`}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {feedingPattern.feedsPerDay} feeds per day
+                  </div>
+                </div>
+              )}
+
+              {/* Typical Feeding Times */}
+              {feedingPattern.typicalTimes.length > 0 && (
+                <div className="bg-white/60 rounded-lg p-3">
+                  <div className="text-xs text-gray-600 mb-2">Typical Feeding Times</div>
+                  <div className="flex flex-wrap gap-2">
+                    {feedingPattern.typicalTimes.map(hour => (
+                      <span key={hour} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                        {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Next Feed Expected */}
+              {feedingPattern.nextFeedExpected && (
+                <div className={`rounded-lg p-3 ${
+                  feedingPattern.isOverdue
+                    ? 'bg-amber-100 border-2 border-amber-300'
+                    : 'bg-white/60'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-gray-600 mb-1">
+                        {feedingPattern.isOverdue ? '⚠️ Feed Overdue' : 'Next Feed Expected'}
+                      </div>
+                      <div className={`text-sm font-semibold ${
+                        feedingPattern.isOverdue ? 'text-amber-700' : 'text-gray-900'
+                      }`}>
+                        {formatTime(feedingPattern.nextFeedExpected)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Last fed {feedingPattern.minutesSinceLastFeed} minutes ago
+                      </div>
+                    </div>
+                    {feedingPattern.isOverdue && (
+                      <button
+                        onClick={() => navigate('/log-feed')}
+                        className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold"
+                      >
+                        Log Feed
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

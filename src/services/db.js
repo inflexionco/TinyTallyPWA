@@ -131,6 +131,86 @@ export const feedService = {
     }
 
     return null;
+  },
+
+  // Detect feeding patterns over the last N days
+  async detectFeedingPattern(childId, days = 7) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const feeds = await this.getFeeds(childId, startDate, endDate);
+
+    if (feeds.length < 3) {
+      // Not enough data to detect patterns
+      return null;
+    }
+
+    // Extract feeding times (hour of day)
+    const feedingHours = feeds.map(feed => new Date(feed.timestamp).getHours());
+
+    // Count occurrences of each hour
+    const hourCounts = {};
+    feedingHours.forEach(hour => {
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+
+    // Identify typical feeding times (appears 30%+ of days)
+    const threshold = days * 0.3;
+    const typicalTimes = Object.entries(hourCounts)
+      .filter(([, count]) => count >= threshold)
+      .map(([hour]) => parseInt(hour))
+      .sort((a, b) => a - b);
+
+    // Calculate intervals between consecutive feeds
+    const intervals = [];
+    for (let i = 1; i < feeds.length; i++) {
+      const diff = (new Date(feeds[i - 1].timestamp) - new Date(feeds[i].timestamp)) / (1000 * 60); // minutes
+      if (diff > 0 && diff < 720) { // Only consider intervals less than 12 hours
+        intervals.push(diff);
+      }
+    }
+
+    // Calculate average interval
+    const avgInterval = intervals.length > 0
+      ? Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length)
+      : null;
+
+    // Calculate feeds per day
+    const feedsPerDay = Math.round((feeds.length / days) * 10) / 10;
+
+    // Get last feed
+    const lastFeed = feeds.length > 0 ? feeds[0] : null;
+
+    // Calculate next expected feed time
+    let nextFeedExpected = null;
+    if (lastFeed && avgInterval) {
+      nextFeedExpected = new Date(new Date(lastFeed.timestamp).getTime() + avgInterval * 60 * 1000);
+    }
+
+    // Determine if a feed is overdue
+    const now = new Date();
+    const minutesSinceLastFeed = lastFeed
+      ? (now - new Date(lastFeed.timestamp)) / (1000 * 60)
+      : null;
+
+    const isOverdue = avgInterval && minutesSinceLastFeed
+      ? minutesSinceLastFeed > avgInterval * 1.2 // 20% buffer
+      : false;
+
+    return {
+      typicalTimes,
+      avgIntervalMinutes: avgInterval,
+      avgIntervalHours: avgInterval ? Math.round((avgInterval / 60) * 10) / 10 : null,
+      feedsPerDay,
+      lastFeed,
+      nextFeedExpected,
+      isOverdue,
+      minutesSinceLastFeed: minutesSinceLastFeed ? Math.round(minutesSinceLastFeed) : null,
+      daysAnalyzed: days,
+      totalFeeds: feeds.length
+    };
   }
 };
 
