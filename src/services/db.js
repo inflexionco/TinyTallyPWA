@@ -53,6 +53,19 @@ db.version(5).stores({
   tummyTime: '++id, childId, startTime, endTime, duration, notes'
 });
 
+// Version 6: Add milestones tracking
+db.version(6).stores({
+  child: '++id, name, dateOfBirth',
+  feeds: '++id, childId, timestamp, type, duration, amount, unit, notes',
+  diapers: '++id, childId, timestamp, type, wetness, consistency, color, quantity, notes',
+  sleep: '++id, childId, startTime, endTime, type, notes',
+  weight: '++id, childId, timestamp, weight, unit, notes',
+  medicines: '++id, childId, timestamp, name, dose, unit, frequency, maxDailyDoses, notes',
+  pumping: '++id, childId, timestamp, side, duration, amount, unit, storageLocation, notes',
+  tummyTime: '++id, childId, startTime, endTime, duration, notes',
+  milestones: '++id, childId, title, date, ageInDays, category, photo, notes'
+});
+
 // Child Profile Service
 export const childService = {
   async getChild() {
@@ -860,5 +873,57 @@ export const statsService = {
     return Array.from(datesSet);
   }
 };
+
+// Milestones Tracking Service
+export const milestoneService = {
+  async addMilestone(milestoneData) {
+    return await db.milestones.add({
+      childId: milestoneData.childId || 1,
+      title: milestoneData.title,
+      date: milestoneData.date || new Date(),
+      ageInDays: milestoneData.ageInDays,
+      category: milestoneData.category || 'other', // 'physical', 'social', 'cognitive', 'other'
+      photo: milestoneData.photo || null, // Base64 string
+      notes: milestoneData.notes || '',
+      createdAt: new Date()
+    });
+  },
+
+  async getMilestones(childId) {
+    return await db.milestones
+      .where('childId')
+      .equals(childId || 1)
+      .reverse()
+      .sortBy('date');
+  },
+
+  async getMilestoneById(id) {
+    return await db.milestones.get(id);
+  },
+
+  async updateMilestone(id, milestoneData) {
+    return await db.milestones.update(id, milestoneData);
+  },
+
+  async deleteMilestone(id) {
+    return await db.milestones.delete(id);
+  }
+};
+
+// Common milestones preset
+export const COMMON_MILESTONES = [
+  { title: 'First smile', category: 'social', typical: '6-8 weeks' },
+  { title: 'Follows objects with eyes', category: 'cognitive', typical: '2-3 months' },
+  { title: 'Holds head up', category: 'physical', typical: '3-4 months' },
+  { title: 'Rolled over', category: 'physical', typical: '4-6 months' },
+  { title: 'First laugh', category: 'social', typical: '3-4 months' },
+  { title: 'Sits without support', category: 'physical', typical: '6-8 months' },
+  { title: 'First tooth', category: 'physical', typical: '6-10 months' },
+  { title: 'Says mama/dada', category: 'cognitive', typical: '10-12 months' },
+  { title: 'Stands alone', category: 'physical', typical: '10-14 months' },
+  { title: 'First steps', category: 'physical', typical: '12-15 months' },
+  { title: 'Waves bye-bye', category: 'social', typical: '9-12 months' },
+  { title: 'Claps hands', category: 'physical', typical: '9-12 months' }
+];
 
 export default db;

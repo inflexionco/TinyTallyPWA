@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Baby, Database, Info } from 'lucide-react';
+import { ArrowLeft, Baby, Database, Info, Sparkles } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
 import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
@@ -216,6 +216,28 @@ export default function Settings({ child, onChildUpdated }) {
               </div>
             </form>
           )}
+        </div>
+
+        {/* Tracking & Growth */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="w-6 h-6 text-purple-500" />
+            <h2 className="text-lg font-bold text-gray-900">Tracking & Growth</h2>
+          </div>
+
+          <button
+            onClick={() => navigate('/milestones')}
+            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl active:scale-95 transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-purple-500" />
+              <div className="text-left">
+                <div className="font-semibold text-gray-900">Milestones</div>
+                <div className="text-sm text-gray-600">Track {child.name}&apos;s special moments</div>
+              </div>
+            </div>
+            <ArrowLeft className="w-5 h-5 text-purple-500 rotate-180" />
+          </button>
         </div>
 
         {/* Data Management */}
