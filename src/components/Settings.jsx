@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Baby, Database, Info, Sparkles } from 'lucide-react';
+import { ArrowLeft, Baby, Database, Info, Sparkles, FileText } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
 import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
+import { pdfReportService } from '../services/pdfReportService';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -17,6 +18,18 @@ export default function Settings({ child, onChildUpdated }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportOptions, setReportOptions] = useState({
+    days: 7,
+    includeFeeding: true,
+    includeDiapers: true,
+    includeSleep: true,
+    includeWeight: true,
+    includeMedicines: true,
+    includeMilestones: true,
+    includeAlerts: true,
+    includeDetailedFeeding: false
+  });
 
   const handleUpdateChild = async (e) => {
     e.preventDefault();
@@ -108,6 +121,22 @@ export default function Settings({ child, onChildUpdated }) {
       },
       onCancel: () => setConfirmDialog(null)
     });
+  };
+
+  const handleGenerateReport = async () => {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - reportOptions.days);
+
+      await pdfReportService.downloadReport(child, startDate, endDate, reportOptions);
+
+      setToast({ message: 'Report downloaded successfully', type: 'success' });
+      setShowReportDialog(false);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      setToast({ message: 'Failed to generate report. Please try again.', type: 'error' });
+    }
   };
 
   return (
@@ -240,6 +269,28 @@ export default function Settings({ child, onChildUpdated }) {
           </button>
         </div>
 
+        {/* Pediatrician Reports */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <FileText className="w-6 h-6 text-indigo-500" />
+            <h2 className="text-lg font-bold text-gray-900">Pediatrician Reports</h2>
+          </div>
+
+          <button
+            onClick={() => setShowReportDialog(true)}
+            className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl active:scale-95 transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-indigo-500" />
+              <div className="text-left">
+                <div className="font-semibold text-gray-900">Generate PDF Report</div>
+                <div className="text-sm text-gray-600">For doctor visits & checkups</div>
+              </div>
+            </div>
+            <ArrowLeft className="w-5 h-5 text-indigo-500 rotate-180" />
+          </button>
+        </div>
+
         {/* Data Management */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
@@ -288,6 +339,92 @@ export default function Settings({ child, onChildUpdated }) {
           </div>
         </div>
       </div>
+
+      {/* Report Generation Dialog */}
+      {showReportDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+              <h2 className="text-lg font-bold text-gray-900">Generate Pediatrician Report</h2>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Time Period */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Period
+                </label>
+                <select
+                  value={reportOptions.days}
+                  onChange={(e) => setReportOptions({ ...reportOptions, days: parseInt(e.target.value) })}
+                  className="input-field"
+                >
+                  <option value={7}>Last 7 days</option>
+                  <option value={14}>Last 2 weeks</option>
+                  <option value={30}>Last month</option>
+                  <option value={90}>Last 3 months</option>
+                </select>
+              </div>
+
+              {/* Sections to Include */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Sections to Include
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'includeFeeding', label: 'Feeding Summary' },
+                    { key: 'includeDiapers', label: 'Diaper Statistics' },
+                    { key: 'includeSleep', label: 'Sleep Patterns' },
+                    { key: 'includeWeight', label: 'Weight Tracking' },
+                    { key: 'includeMedicines', label: 'Medications' },
+                    { key: 'includeMilestones', label: 'Milestones' },
+                    { key: 'includeAlerts', label: 'Health Insights & Alerts' },
+                    { key: 'includeDetailedFeeding', label: 'Detailed Feeding Log (up to 50 entries)' }
+                  ].map(option => (
+                    <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={reportOptions[option.key]}
+                        onChange={(e) => setReportOptions({
+                          ...reportOptions,
+                          [option.key]: e.target.checked
+                        })}
+                        className="w-4 h-4 text-indigo-600 rounded"
+                      />
+                      <span className="text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3">
+                <p className="text-xs text-gray-600">
+                  This report includes {child.name}&apos;s statistics, trends, and health insights.
+                  Perfect for pediatrician visits and checkups.
+                </p>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowReportDialog(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleGenerateReport}
+                  className="btn-primary flex-1"
+                >
+                  Generate PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notifications */}
       {toast && (
