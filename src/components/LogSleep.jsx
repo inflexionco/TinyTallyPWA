@@ -34,6 +34,34 @@ export default function LogSleep({ child }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child, editId]);
 
+  // Handle quick-log from voice shortcuts or app shortcuts
+  useEffect(() => {
+    const quickMode = searchParams.get('quick');
+    if (quickMode && !editId && !activeSleep && !loading) {
+      handleQuickStartSleep(quickMode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, activeSleep, loading]);
+
+  const handleQuickStartSleep = async (type) => {
+    try {
+      await sleepService.addSleep({
+        childId: child.id,
+        startTime: new Date(),
+        type: type,
+        notes: 'Started via voice command'
+      });
+
+      const typeLabel = type === 'nap' ? 'Nap' : 'Night sleep';
+      setToast({ message: `${typeLabel} tracking started!`, type: 'success' });
+
+      // Navigate back to dashboard after 2 seconds
+      setTimeout(() => navigate('/'), 2000);
+    } catch (error) {
+      setToast({ message: 'Failed to start sleep tracking. Please try again.', type: 'error' });
+    }
+  };
+
   const loadSleepData = async () => {
     try {
       const sleep = await sleepService.getSleepById(parseInt(editId));

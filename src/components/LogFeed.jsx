@@ -56,6 +56,17 @@ export default function LogFeed({ child }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
+  // Handle quick-log from voice shortcuts or app shortcuts
+  useEffect(() => {
+    const quickMode = searchParams.get('quick');
+    if (quickMode === 'start' && !editId) {
+      // Auto-start timer for feeding
+      startTimer();
+      setToast({ message: 'Feeding timer started!', type: 'success' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const loadFeedData = async () => {
     try {
       const feed = await feedService.getFeed(parseInt(editId));

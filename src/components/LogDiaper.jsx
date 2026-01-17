@@ -57,6 +57,15 @@ export default function LogDiaper({ child }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
+  // Handle quick-log from voice shortcuts or app shortcuts
+  useEffect(() => {
+    const quickMode = searchParams.get('quick');
+    if (quickMode && !editId) {
+      handleQuickLog(quickMode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const loadDiaperData = async () => {
     try {
       const diaper = await diaperService.getDiaper(parseInt(editId));
@@ -78,6 +87,39 @@ export default function LogDiaper({ child }) {
       setToast({ message: 'Failed to load diaper data. Please try again.', type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleQuickLog = async (type) => {
+    try {
+      const diaperData = {
+        childId: child.id,
+        timestamp: new Date(),
+        type: type,
+        notes: 'Logged via voice command'
+      };
+
+      // Add defaults for wet diapers
+      if (type === 'wet' || type === 'both') {
+        diaperData.wetness = 'medium';
+      }
+
+      // Add defaults for dirty diapers
+      if (type === 'dirty' || type === 'both') {
+        diaperData.consistency = 'soft';
+        diaperData.color = 'yellow';
+        diaperData.quantity = 'medium';
+      }
+
+      await diaperService.addDiaper(diaperData);
+
+      const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+      setToast({ message: `${typeLabel} diaper logged!`, type: 'success' });
+
+      // Navigate back to dashboard after 2 seconds
+      setTimeout(() => navigate('/'), 2000);
+    } catch (error) {
+      setToast({ message: 'Failed to log diaper. Please try again.', type: 'error' });
     }
   };
 

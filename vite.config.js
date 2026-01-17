@@ -18,6 +18,36 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         orientation: 'portrait',
+        shortcuts: [
+          {
+            name: 'Log Wet Diaper',
+            short_name: 'Wet Diaper',
+            description: 'Quickly log a wet diaper change',
+            url: '/log-diaper?quick=wet',
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }]
+          },
+          {
+            name: 'Log Dirty Diaper',
+            short_name: 'Dirty Diaper',
+            description: 'Quickly log a dirty diaper change',
+            url: '/log-diaper?quick=dirty',
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }]
+          },
+          {
+            name: 'Start Feeding',
+            short_name: 'Start Feed',
+            description: 'Start feeding timer',
+            url: '/log-feed?quick=start',
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }]
+          },
+          {
+            name: 'Start Nap',
+            short_name: 'Start Nap',
+            description: 'Start nap tracking',
+            url: '/log-sleep?quick=nap',
+            icons: [{ src: '/icons/icon-96x96.png', sizes: '96x96' }]
+          }
+        ],
         icons: [
           {
             src: '/icons/icon-72x72.png',
