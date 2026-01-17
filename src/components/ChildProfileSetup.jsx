@@ -30,12 +30,12 @@ export default function ChildProfileSetup({ onChildCreated }) {
     setIsSubmitting(true);
 
     try {
-      await childService.createChild({
+      const newChildId = await childService.createChild({
         name: sanitizedName,
         dateOfBirth: new Date(formData.dateOfBirth)
       });
 
-      onChildCreated();
+      onChildCreated(newChildId);
     } catch (err) {
       console.error('Error creating child profile:', err);
       setError('Failed to create profile. Please try again.');

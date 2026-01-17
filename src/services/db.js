@@ -73,6 +73,14 @@ export const childService = {
     return children.length > 0 ? children[0] : null;
   },
 
+  async getAllChildren() {
+    return await db.child.toArray();
+  },
+
+  async getChildById(id) {
+    return await db.child.get(id);
+  },
+
   async createChild(childData) {
     return await db.child.add({
       name: childData.name,
@@ -83,6 +91,34 @@ export const childService = {
 
   async updateChild(id, childData) {
     return await db.child.update(id, childData);
+  },
+
+  async deleteChild(id) {
+    // Delete all associated data
+    await db.feeds.where('childId').equals(id).delete();
+    await db.diapers.where('childId').equals(id).delete();
+    await db.sleep.where('childId').equals(id).delete();
+    await db.weight.where('childId').equals(id).delete();
+    await db.medicines.where('childId').equals(id).delete();
+    await db.pumping.where('childId').equals(id).delete();
+    await db.tummyTime.where('childId').equals(id).delete();
+    await db.milestones.where('childId').equals(id).delete();
+
+    // Delete the child
+    return await db.child.delete(id);
+  },
+
+  // Active child management (stored in localStorage)
+  getActiveChildId() {
+    return localStorage.getItem('activeChildId');
+  },
+
+  setActiveChildId(childId) {
+    localStorage.setItem('activeChildId', childId);
+  },
+
+  clearActiveChildId() {
+    localStorage.removeItem('activeChildId');
   }
 };
 

@@ -8,9 +8,14 @@ import { pdfReportService } from '../services/pdfReportService';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
-export default function Settings({ child, onChildUpdated }) {
+export default function Settings({ child, allChildren, onChildUpdated, onChildCreated, onSwitchChild }) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [newChildData, setNewChildData] = useState({
+    name: '',
+    dateOfBirth: ''
+  });
   const [formData, setFormData] = useState({
     name: child.name,
     dateOfBirth: new Date(child.dateOfBirth).toISOString().split('T')[0]
@@ -139,6 +144,83 @@ export default function Settings({ child, onChildUpdated }) {
     }
   };
 
+  const handleAddChild = async (e) => {
+    e.preventDefault();
+
+    const sanitizedName = sanitizeName(newChildData.name);
+
+    if (!sanitizedName) {
+      setToast({ message: 'Please enter a valid name', type: 'error' });
+      return;
+    }
+
+    if (!isValidDate(newChildData.dateOfBirth)) {
+      setToast({ message: 'Please enter a valid date of birth', type: 'error' });
+      return;
+    }
+
+    if (isFutureDate(newChildData.dateOfBirth)) {
+      setToast({ message: 'Date of birth cannot be in the future', type: 'error' });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const newChildId = await childService.createChild({
+        name: sanitizedName,
+        dateOfBirth: new Date(newChildData.dateOfBirth)
+      });
+
+      setToast({ message: `${sanitizedName} added successfully`, type: 'success' });
+      setShowAddChild(false);
+      setNewChildData({ name: '', dateOfBirth: '' });
+
+      await onChildCreated(newChildId);
+    } catch (error) {
+      console.error('Error adding child:', error);
+      setToast({ message: 'Failed to add child. Please try again.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteChild = (childToDelete) => {
+    if (allChildren.length === 1) {
+      setToast({ message: 'Cannot delete the only child profile', type: 'error' });
+      return;
+    }
+
+    setConfirmDialog({
+      title: `Delete ${childToDelete.name}?`,
+      message: `This will permanently delete ${childToDelete.name}'s profile and ALL associated data (feeds, diapers, sleep, etc.). This action cannot be undone!`,
+      confirmText: 'Delete Profile',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await childService.deleteChild(childToDelete.id);
+
+          // If deleting active child, switch to first remaining child
+          if (childToDelete.id === child.id) {
+            const remainingChildren = allChildren.filter(c => c.id !== childToDelete.id);
+            if (remainingChildren.length > 0) {
+              onSwitchChild(remainingChildren[0].id);
+            }
+          }
+
+          await onChildUpdated();
+          setToast({ message: `${childToDelete.name}'s profile deleted`, type: 'success' });
+        } catch (error) {
+          console.error('Error deleting child:', error);
+          setToast({ message: 'Failed to delete profile. Please try again.', type: 'error' });
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
+
   return (
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
@@ -244,6 +326,75 @@ export default function Settings({ child, onChildUpdated }) {
                 </button>
               </div>
             </form>
+          )}
+        </div>
+
+        {/* Multi-Child Management */}
+        {allChildren && allChildren.length > 1 && (
+          <div className="card">
+            <div className="flex items-center gap-3 mb-4">
+              <Baby className="w-6 h-6 text-green-500" />
+              <h2 className="text-lg font-bold text-gray-900">Switch Child</h2>
+            </div>
+
+            <div className="space-y-2">
+              {allChildren.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    onSwitchChild(c.id);
+                    setToast({ message: `Switched to ${c.name}`, type: 'success' });
+                  }}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                    c.id === child.id
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 bg-white hover:border-green-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Baby className={`w-5 h-5 ${c.id === child.id ? 'text-green-500' : 'text-gray-400'}`} />
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">{c.name}</div>
+                      <div className="text-sm text-gray-600">{getAgeInWeeks(c.dateOfBirth)}</div>
+                    </div>
+                  </div>
+                  {c.id === child.id && (
+                    <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add Another Child */}
+        <div className="card">
+          <button
+            onClick={() => setShowAddChild(true)}
+            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl active:scale-95 transition-transform"
+          >
+            <Baby className="w-5 h-5 text-green-500" />
+            <span className="font-semibold text-gray-900">Add Another Child</span>
+          </button>
+
+          {allChildren && allChildren.length > 1 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Manage Profiles
+              </label>
+              {allChildren.map(c => (
+                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                  <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                  <button
+                    onClick={() => handleDeleteChild(c)}
+                    className="text-xs text-red-600 hover:text-red-800 font-medium"
+                    disabled={allChildren.length === 1}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -422,6 +573,76 @@ export default function Settings({ child, onChildUpdated }) {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Child Dialog */}
+      {showAddChild && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+              <h2 className="text-lg font-bold text-gray-900">Add Another Child</h2>
+            </div>
+
+            <form onSubmit={handleAddChild} className="p-4 space-y-4">
+              {/* Name */}
+              <div>
+                <label htmlFor="newChildName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Child&apos;s Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="newChildName"
+                  value={newChildData.name}
+                  onChange={(e) => setNewChildData({ ...newChildData, name: e.target.value })}
+                  className="input-field"
+                  placeholder="Enter child's name"
+                  maxLength={INPUT_LIMITS.NAME_MAX_LENGTH}
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label htmlFor="newChildDob" className="block text-sm font-medium text-gray-700 mb-2">
+                  Date of Birth <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="newChildDob"
+                  value={newChildData.dateOfBirth}
+                  onChange={(e) => setNewChildData({ ...newChildData, dateOfBirth: e.target.value })}
+                  className="input-field"
+                  max={new Date().toISOString().split('T')[0]}
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddChild(false);
+                    setNewChildData({ name: '', dateOfBirth: '' });
+                  }}
+                  className="btn-secondary flex-1"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary flex-1"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Adding...' : 'Add Child'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -8,7 +8,7 @@ import Toast from './Toast';
 import BatchNightLogging from './BatchNightLogging';
 import Insights from './Insights';
 
-export default function Dashboard({ child }) {
+export default function Dashboard({ child, allChildren, onSwitchChild }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
@@ -283,12 +283,24 @@ export default function Dashboard({ child }) {
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white safe-top">
         <div className="container-safe pt-2">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
                 <Baby className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold">{child.name}</h1>
+              <div className="flex-1 min-w-0">
+                {allChildren && allChildren.length > 1 ? (
+                  <select
+                    value={child.id}
+                    onChange={(e) => onSwitchChild(parseInt(e.target.value))}
+                    className="text-xl font-bold bg-transparent border-none text-white focus:outline-none cursor-pointer max-w-full appearance-none"
+                  >
+                    {allChildren.map(c => (
+                      <option key={c.id} value={c.id} className="text-gray-900">{c.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <h1 className="text-xl font-bold truncate">{child.name}</h1>
+                )}
                 <p className="text-sm text-blue-100">{getAgeInWeeks(child.dateOfBirth)} old</p>
               </div>
             </div>
