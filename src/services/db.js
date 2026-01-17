@@ -926,4 +926,211 @@ export const COMMON_MILESTONES = [
   { title: 'Claps hands', category: 'physical', typical: '9-12 months' }
 ];
 
+// Insights & Pattern Analysis Service
+export const insightsService = {
+  async generateInsights(childId, days = 7) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const endDate = new Date();
+
+    const [feeds, diapers, sleeps] = await Promise.all([
+      feedService.getFeeds(childId, startDate, endDate),
+      diaperService.getDiapers(childId, startDate, endDate),
+      sleepService.getSleep(childId, startDate, endDate)
+    ]);
+
+    const insights = {
+      feeding: this.analyzeFeedingPattern(feeds, days),
+      sleep: this.analyzeSleepPattern(sleeps, days),
+      diaper: this.analyzeDiaperPattern(diapers, days),
+      alerts: await this.generateAlerts(childId, feeds, diapers, sleeps)
+    };
+
+    return insights;
+  },
+
+  analyzeFeedingPattern(feeds, days) {
+    if (feeds.length === 0) return null;
+
+    const feedsPerDay = (feeds.length / days).toFixed(1);
+
+    // Calculate average interval
+    const intervals = [];
+    for (let i = 1; i < feeds.length; i++) {
+      const diff = (new Date(feeds[i - 1].timestamp) - new Date(feeds[i].timestamp)) / (1000 * 60);
+      intervals.push(diff);
+    }
+    const avgInterval = intervals.length > 0
+      ? Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length)
+      : 0;
+
+    // Find most common feeding times (hour of day)
+    const hourCounts = {};
+    feeds.forEach(feed => {
+      const hour = new Date(feed.timestamp).getHours();
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+
+    const typicalHours = Object.entries(hourCounts)
+      .filter(([, count]) => count >= days * 0.3) // Appears in 30%+ of days
+      .map(([hour]) => parseInt(hour))
+      .sort((a, b) => a - b)
+      .slice(0, 5); // Top 5 hours
+
+    // Trend analysis
+    const firstHalfFeeds = feeds.slice(Math.floor(feeds.length / 2)).length;
+    const secondHalfFeeds = feeds.slice(0, Math.floor(feeds.length / 2)).length;
+    let trend = 'stable';
+    if (firstHalfFeeds > secondHalfFeeds * 1.2) trend = 'increasing';
+    else if (firstHalfFeeds < secondHalfFeeds * 0.8) trend = 'decreasing';
+
+    return {
+      feedsPerDay: parseFloat(feedsPerDay),
+      avgIntervalMinutes: avgInterval,
+      avgIntervalHours: (avgInterval / 60).toFixed(1),
+      typicalHours,
+      trend,
+      totalFeeds: feeds.length
+    };
+  },
+
+  analyzeSleepPattern(sleeps, days) {
+    const completedSleeps = sleeps.filter(s => s.endTime);
+
+    if (completedSleeps.length === 0) return null;
+
+    // Calculate total sleep time
+    const totalMinutes = completedSleeps.reduce((total, sleep) => {
+      const duration = (new Date(sleep.endTime) - new Date(sleep.startTime)) / (1000 * 60);
+      return total + duration;
+    }, 0);
+
+    const avgSleepPerDay = totalMinutes / days / 60; // hours
+    const avgSleepDuration = totalMinutes / completedSleeps.length; // minutes per session
+
+    // Find longest stretch
+    const durations = completedSleeps.map(s =>
+      (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60)
+    );
+    const longestStretch = Math.max(...durations);
+
+    // Separate naps and night sleep
+    const naps = completedSleeps.filter(s => s.type === 'nap');
+    const nightSleeps = completedSleeps.filter(s => s.type === 'night');
+
+    // Trend
+    const firstHalf = completedSleeps.slice(Math.floor(completedSleeps.length / 2));
+    const secondHalf = completedSleeps.slice(0, Math.floor(completedSleeps.length / 2));
+    const firstHalfAvg = firstHalf.reduce((sum, s) =>
+      sum + (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60), 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, s) =>
+      sum + (new Date(s.endTime) - new Date(s.startTime)) / (1000 * 60), 0) / secondHalf.length;
+
+    let trend = 'stable';
+    if (firstHalfAvg > secondHalfAvg * 1.2) trend = 'improving';
+    else if (firstHalfAvg < secondHalfAvg * 0.8) trend = 'declining';
+
+    return {
+      totalHoursPerDay: avgSleepPerDay.toFixed(1),
+      avgSessionMinutes: Math.round(avgSleepDuration),
+      longestStretchMinutes: Math.round(longestStretch),
+      longestStretchHours: (longestStretch / 60).toFixed(1),
+      napsPerDay: (naps.length / days).toFixed(1),
+      nightSleepsPerDay: (nightSleeps.length / days).toFixed(1),
+      trend,
+      totalSessions: completedSleeps.length
+    };
+  },
+
+  analyzeDiaperPattern(diapers, days) {
+    if (diapers.length === 0) return null;
+
+    const wetDiapers = diapers.filter(d => d.type === 'wet' || d.type === 'both');
+    const dirtyDiapers = diapers.filter(d => d.type === 'dirty' || d.type === 'both');
+
+    const wetPerDay = (wetDiapers.length / days).toFixed(1);
+    const dirtyPerDay = (dirtyDiapers.length / days).toFixed(1);
+
+    // Check if wet diaper count is normal (6+ per day for newborns)
+    const wetDiaperStatus = wetPerDay >= 6 ? 'normal' : 'low';
+
+    return {
+      wetPerDay: parseFloat(wetPerDay),
+      dirtyPerDay: parseFloat(dirtyPerDay),
+      totalPerDay: ((diapers.length / days).toFixed(1)),
+      wetDiaperStatus,
+      totalDiapers: diapers.length
+    };
+  },
+
+  async generateAlerts(childId, feeds, diapers, sleeps) {
+    const alerts = [];
+
+    // Check wet diaper count (last 24 hours)
+    const last24h = new Date();
+    last24h.setHours(last24h.getHours() - 24);
+    const recentWetDiapers = diapers.filter(d =>
+      (d.type === 'wet' || d.type === 'both') &&
+      new Date(d.timestamp) >= last24h
+    );
+
+    if (recentWetDiapers.length < 6 && diapers.length > 0) {
+      alerts.push({
+        type: 'warning',
+        icon: '💧',
+        title: 'Low Wet Diaper Count',
+        message: `Only ${recentWetDiapers.length} wet diapers in last 24 hours`,
+        suggestion: 'Newborns should have 6+ wet diapers per day. Ensure baby is well-hydrated.',
+        severity: 'medium'
+      });
+    }
+
+    // Check feeding frequency (last 24 hours)
+    const recentFeeds = feeds.filter(f => new Date(f.timestamp) >= last24h);
+    if (recentFeeds.length < 6 && feeds.length > 0) {
+      const now = new Date().getHours();
+      if (now > 18) { // After 6 PM
+        alerts.push({
+          type: 'info',
+          icon: '🍼',
+          title: 'Feeding Frequency',
+          message: `${recentFeeds.length} feeds in last 24 hours`,
+          suggestion: 'Newborns typically need 8-12 feeds per day.',
+          severity: 'low'
+        });
+      }
+    }
+
+    // Check for concerning stool colors in recent diapers
+    const concerningDiapers = diapers
+      .filter(d => d.color === 'black' || d.color === 'red')
+      .slice(0, 3); // Last 3 concerning ones
+
+    if (concerningDiapers.length > 0) {
+      alerts.push({
+        type: 'alert',
+        icon: '⚠️',
+        title: 'Unusual Stool Color',
+        message: `${concerningDiapers.length} concerning stool color(s) detected`,
+        suggestion: 'Contact your pediatrician about black or red stools (unless in first 2 days).',
+        severity: 'high'
+      });
+    }
+
+    // Positive feedback for good patterns
+    if (recentWetDiapers.length >= 6 && recentFeeds.length >= 8) {
+      alerts.push({
+        type: 'success',
+        icon: '✅',
+        title: 'Healthy Patterns',
+        message: 'Baby is feeding and hydrating well',
+        suggestion: 'Great job! Keep up the routine.',
+        severity: 'none'
+      });
+    }
+
+    return alerts;
+  }
+};
+
 export default db;

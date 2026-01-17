@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
-import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService } from '../services/db';
+import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService, insightsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
 import Toast from './Toast';
 import BatchNightLogging from './BatchNightLogging';
+import Insights from './Insights';
 
 export default function Dashboard({ child }) {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ export default function Dashboard({ child }) {
   const [breastSuggestion, setBreastSuggestion] = useState(null);
   const [feedingPattern, setFeedingPattern] = useState(null);
   const [showBatchNightLog, setShowBatchNightLog] = useState(false);
+  const [insights, setInsights] = useState(null);
+  const [showInsights, setShowInsights] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -33,7 +36,7 @@ export default function Dashboard({ child }) {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, lastMedicineData, activeSleepData, breastSuggestionData, feedingPatternData] = await Promise.all([
+      const [statsData, lastFeedData, lastDiaperData, lastSleepData, lastWeightData, lastMedicineData, activeSleepData, breastSuggestionData, feedingPatternData, insightsData] = await Promise.all([
         statsService.getDailyStats(child.id, new Date()),
         feedService.getLastFeed(child.id),
         diaperService.getLastDiaper(child.id),
@@ -42,7 +45,8 @@ export default function Dashboard({ child }) {
         medicineService.getLastMedicine(child.id),
         sleepService.getActiveSleep(child.id),
         feedService.getLastBreastfeedingSide(child.id),
-        feedService.detectFeedingPattern(child.id, 7)
+        feedService.detectFeedingPattern(child.id, 7),
+        insightsService.generateInsights(child.id, 7)
       ]);
 
       setStats(statsData);
@@ -54,6 +58,7 @@ export default function Dashboard({ child }) {
       setActiveSleep(activeSleepData);
       setBreastSuggestion(breastSuggestionData);
       setFeedingPattern(feedingPatternData);
+      setInsights(insightsData);
 
       // Combine all events and sort by time
       const allEvents = [
@@ -330,6 +335,31 @@ export default function Dashboard({ child }) {
       </div>
 
       <div className="container-safe py-6">
+        {/* Pattern Insights & Trends */}
+        {showInsights && insights && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">📊 Insights & Patterns</h2>
+              <button
+                onClick={() => setShowInsights(false)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Hide
+              </button>
+            </div>
+            <Insights insights={insights} />
+          </div>
+        )}
+
+        {!showInsights && (
+          <button
+            onClick={() => setShowInsights(true)}
+            className="w-full mb-6 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl text-sm font-semibold text-gray-700 hover:from-blue-100 hover:to-purple-100 transition-colors"
+          >
+            📊 Show Insights & Patterns
+          </button>
+        )}
+
         {/* Feeding Suggestion Widget */}
         {breastSuggestion && (
           <div className="card mb-6 bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200">
