@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { statsService } from '../services/db';
 import { formatDate, getDateLabel } from '../utils/dateUtils';
 import EventList from './EventList';
+import CalendarDatePicker from './CalendarDatePicker';
 
 export default function History({ child }) {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function History({ child }) {
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     loadHistoryData();
@@ -63,6 +65,11 @@ export default function History({ child }) {
     setSelectedDate(new Date());
   };
 
+  const handleCalendarDateSelect = (date) => {
+    setSelectedDate(date);
+    setShowCalendar(false);
+  };
+
   const isToday = selectedDate.toDateString() === new Date().toDateString();
 
   return (
@@ -78,7 +85,13 @@ export default function History({ child }) {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-xl font-bold">History</h1>
-            <div className="w-10"></div>
+            <button
+              onClick={() => setShowCalendar(true)}
+              className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform"
+              title="Open calendar"
+            >
+              <Calendar className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Date Navigator */}
@@ -159,6 +172,16 @@ export default function History({ child }) {
           </div>
         )}
       </div>
+
+      {/* Calendar Date Picker Modal */}
+      {showCalendar && (
+        <CalendarDatePicker
+          child={child}
+          selectedDate={selectedDate}
+          onSelectDate={handleCalendarDateSelect}
+          onDismiss={() => setShowCalendar(false)}
+        />
+      )}
     </div>
   );
 }

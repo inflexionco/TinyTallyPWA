@@ -587,6 +587,44 @@ export const statsService = {
       weights,
       medicines
     };
+  },
+
+  async getDatesWithActivity(childId, startDate, endDate) {
+    const feeds = await feedService.getFeeds(childId, startDate, endDate);
+    const diapers = await diaperService.getDiapers(childId, startDate, endDate);
+    const sleeps = await sleepService.getSleep(childId, startDate, endDate);
+    const weights = await weightService.getWeights(childId, startDate, endDate);
+    const medicines = await medicineService.getMedicines(childId, startDate, endDate);
+
+    // Collect all unique dates with activity
+    const datesSet = new Set();
+
+    feeds.forEach(f => {
+      const dateStr = new Date(f.timestamp).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    diapers.forEach(d => {
+      const dateStr = new Date(d.timestamp).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    sleeps.forEach(s => {
+      const dateStr = new Date(s.startTime).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    weights.forEach(w => {
+      const dateStr = new Date(w.timestamp).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    medicines.forEach(m => {
+      const dateStr = new Date(m.timestamp).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    return Array.from(datesSet);
   }
 };
 
