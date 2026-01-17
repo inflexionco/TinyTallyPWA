@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Baby, Database, Info, Sparkles, FileText } from 'lucide-react';
+import { ArrowLeft, Baby, Database, Info, Sparkles, FileText, Upload, Download, QrCode, Share2 } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
 import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
 import { pdfReportService } from '../services/pdfReportService';
+import QRCode from 'qrcode';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -24,6 +25,9 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
   const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showSyncDialog, setShowSyncDialog] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState(null);
+  const fileInputRef = useRef(null);
   const [reportOptions, setReportOptions] = useState({
     days: 7,
     includeFeeding: true,
@@ -78,11 +82,16 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
   const handleExportData = async () => {
     try {
       const allData = {
+        version: 1,
         child: await db.child.toArray(),
         feeds: await db.feeds.toArray(),
         diapers: await db.diapers.toArray(),
         sleep: await db.sleep.toArray(),
         weight: await db.weight.toArray(),
+        medicines: await db.medicines.toArray(),
+        pumping: await db.pumping.toArray(),
+        tummyTime: await db.tummyTime.toArray(),
+        milestones: await db.milestones.toArray(),
         exportDate: new Date().toISOString()
       };
 
@@ -100,6 +109,97 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
     } catch (error) {
       console.error('Error exporting data:', error);
       setToast({ message: 'Failed to export data. Please try again.', type: 'error' });
+    }
+  };
+
+  const handleGenerateQRCode = async () => {
+    try {
+      // Get recent data (last 7 days) to keep QR code size manageable
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentData = {
+        version: 1,
+        child: [child],
+        feeds: await db.feeds.where('childId').equals(child.id).filter(f => new Date(f.timestamp) >= sevenDaysAgo).toArray(),
+        diapers: await db.diapers.where('childId').equals(child.id).filter(d => new Date(d.timestamp) >= sevenDaysAgo).toArray(),
+        sleep: await db.sleep.where('childId').equals(child.id).filter(s => new Date(s.startTime) >= sevenDaysAgo).toArray(),
+        exportDate: new Date().toISOString(),
+        note: 'Last 7 days of data for ' + child.name
+      };
+
+      const dataStr = JSON.stringify(recentData);
+
+      // Check size
+      if (dataStr.length > 2000) {
+        setToast({ message: 'Too much data for QR code. Use Export JSON instead.', type: 'error' });
+        return;
+      }
+
+      const qrDataUrl = await QRCode.toDataURL(dataStr, { width: 400, margin: 2 });
+      setQrCodeDataUrl(qrDataUrl);
+      setShowSyncDialog(true);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      setToast({ message: 'Failed to generate QR code. Please try again.', type: 'error' });
+    }
+  };
+
+  const handleImportData = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const importedData = JSON.parse(text);
+
+      if (!importedData.version || !importedData.child) {
+        setToast({ message: 'Invalid backup file format', type: 'error' });
+        return;
+      }
+
+      setConfirmDialog({
+        title: 'Import Data?',
+        message: `This will import data from the backup file. Existing data will be merged (not replaced). Import ${importedData.child.length} child profile(s)?`,
+        confirmText: 'Import Data',
+        cancelText: 'Cancel',
+        variant: 'warning',
+        onConfirm: async () => {
+          setConfirmDialog(null);
+          try {
+            // Import children
+            for (const childData of importedData.child || []) {
+              const { id, createdAt, ...childInfo } = childData;
+              await db.child.add({ ...childInfo, createdAt: new Date() });
+            }
+
+            // Import other data
+            if (importedData.feeds) await db.feeds.bulkAdd(importedData.feeds.map(({ id, ...rest }) => rest));
+            if (importedData.diapers) await db.diapers.bulkAdd(importedData.diapers.map(({ id, ...rest }) => rest));
+            if (importedData.sleep) await db.sleep.bulkAdd(importedData.sleep.map(({ id, ...rest }) => rest));
+            if (importedData.weight) await db.weight.bulkAdd(importedData.weight.map(({ id, ...rest }) => rest));
+            if (importedData.medicines) await db.medicines.bulkAdd(importedData.medicines.map(({ id, ...rest }) => rest));
+            if (importedData.pumping) await db.pumping.bulkAdd(importedData.pumping.map(({ id, ...rest }) => rest));
+            if (importedData.tummyTime) await db.tummyTime.bulkAdd(importedData.tummyTime.map(({ id, ...rest }) => rest));
+            if (importedData.milestones) await db.milestones.bulkAdd(importedData.milestones.map(({ id, ...rest }) => rest));
+
+            setToast({ message: 'Data imported successfully', type: 'success' });
+            await onChildUpdated();
+          } catch (error) {
+            console.error('Error importing data:', error);
+            setToast({ message: 'Failed to import some data. Check console for details.', type: 'error' });
+          }
+        },
+        onCancel: () => setConfirmDialog(null)
+      });
+    } catch (error) {
+      console.error('Error reading import file:', error);
+      setToast({ message: 'Failed to read backup file. Please try again.', type: 'error' });
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -442,21 +542,68 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           </button>
         </div>
 
+        {/* Partner Sync & Data Sharing */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <Share2 className="w-6 h-6 text-blue-500" />
+            <h2 className="text-lg font-bold text-gray-900">Partner Sync & Sharing</h2>
+          </div>
+
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleExportData}
+                className="btn-secondary flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </button>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-secondary flex items-center justify-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Import
+              </button>
+            </div>
+
+            <button
+              onClick={handleGenerateQRCode}
+              className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl active:scale-95 transition-transform font-semibold text-gray-900"
+            >
+              <QrCode className="w-5 h-5 text-blue-500" />
+              Share via QR Code (Last 7 Days)
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportData}
+              className="hidden"
+            />
+          </div>
+
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-600">
+            <p className="font-medium mb-2">Partner Sync Instructions:</p>
+            <ol className="space-y-1 text-xs list-decimal list-inside">
+              <li>Export data from one device</li>
+              <li>Transfer file to partner&apos;s device (email, cloud, QR)</li>
+              <li>Partner imports file on their device</li>
+              <li>Data merges automatically</li>
+            </ol>
+          </div>
+        </div>
+
         {/* Data Management */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
-            <Database className="w-6 h-6 text-blue-500" />
+            <Database className="w-6 h-6 text-red-500" />
             <h2 className="text-lg font-bold text-gray-900">Data Management</h2>
           </div>
 
           <div className="space-y-3">
-            <button
-              onClick={handleExportData}
-              className="btn-secondary w-full"
-            >
-              Export All Data
-            </button>
-
             <button
               onClick={handleClearAllData}
               className="w-full py-3 px-6 rounded-xl border-2 border-red-200 text-red-600 font-semibold active:scale-95 transition-transform"
@@ -467,7 +614,7 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
 
           <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-600">
             <p className="font-medium mb-1">About Data Storage</p>
-            <p>All your data is stored locally on this device using IndexedDB. Your data never leaves your device and is not synced to any cloud service.</p>
+            <p>All your data is stored locally on this device using IndexedDB. Data is only shared when you explicitly export/import.</p>
           </div>
         </div>
 
@@ -572,6 +719,42 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
                   Generate PDF
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Sync Dialog */}
+      {showSyncDialog && qrCodeDataUrl && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
+              <h2 className="text-lg font-bold text-gray-900">Share via QR Code</h2>
+            </div>
+
+            <div className="p-4 text-center space-y-4">
+              <p className="text-sm text-gray-600">
+                Scan this QR code with your partner&apos;s device to share the last 7 days of data for {child.name}.
+              </p>
+
+              <div className="bg-white p-4 rounded-xl border-2 border-gray-200 inline-block">
+                <img src={qrCodeDataUrl} alt="QR Code" className="w-full max-w-sm" />
+              </div>
+
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-3 text-xs text-gray-600">
+                <p className="font-medium mb-1">Note:</p>
+                <p>QR codes work best for recent data only. For full history, use Export/Import instead.</p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowSyncDialog(false);
+                  setQrCodeDataUrl(null);
+                }}
+                className="btn-primary w-full"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
