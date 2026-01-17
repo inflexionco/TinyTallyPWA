@@ -30,7 +30,9 @@ export default function History({ child }) {
         ...statsData.feeds.map(f => ({ ...f, eventType: 'feed' })),
         ...statsData.diapers.map(d => ({ ...d, eventType: 'diaper' })),
         ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' })),
-        ...statsData.weights.map(w => ({ ...w, eventType: 'weight' }))
+        ...statsData.weights.map(w => ({ ...w, eventType: 'weight' })),
+        ...statsData.medicines.map(m => ({ ...m, eventType: 'medicine' })),
+        ...statsData.pumpings.map(p => ({ ...p, eventType: 'pumping' }))
       ].sort((a, b) => {
         const timeA = a.timestamp || a.startTime;
         const timeB = b.timestamp || b.startTime;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Baby, Droplet, Moon, Scale, Pill, History, Settings, RefreshCw } from 'lucide-react';
-import { feedService, diaperService, sleepService, weightService, medicineService, statsService } from '../services/db';
+import { Baby, Droplet, Moon, Scale, Pill, Droplets, History, Settings, RefreshCw } from 'lucide-react';
+import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, statsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
 import EventList from './EventList';
 import Toast from './Toast';
@@ -61,7 +61,8 @@ export default function Dashboard({ child }) {
         ...statsData.diapers.map(d => ({ ...d, eventType: 'diaper' })),
         ...statsData.sleeps.map(s => ({ ...s, eventType: 'sleep' })),
         ...statsData.weights.map(w => ({ ...w, eventType: 'weight' })),
-        ...statsData.medicines.map(m => ({ ...m, eventType: 'medicine' }))
+        ...statsData.medicines.map(m => ({ ...m, eventType: 'medicine' })),
+        ...statsData.pumpings.map(p => ({ ...p, eventType: 'pumping' }))
       ].sort((a, b) => {
         const timeA = a.timestamp || a.startTime;
         const timeB = b.timestamp || b.startTime;
@@ -503,6 +504,18 @@ export default function Dashboard({ child }) {
                 <span className="text-xs font-semibold text-gray-700">Bottle</span>
               </button>
             </div>
+          </div>
+
+          {/* Pumping Quick Action */}
+          <div className="mb-4">
+            <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Pumping</div>
+            <button
+              onClick={() => navigate('/log-pumping')}
+              className="w-full flex items-center justify-center gap-2 p-4 bg-cyan-50 hover:bg-cyan-100 active:bg-cyan-200 rounded-xl transition-colors border-2 border-cyan-200"
+            >
+              <Droplets className="w-6 h-6 text-cyan-500" />
+              <span className="text-sm font-semibold text-gray-700">Log Pumping Session</span>
+            </button>
           </div>
 
           {/* Sleep Quick Actions */}

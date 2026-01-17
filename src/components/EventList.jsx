@@ -1,7 +1,7 @@
-import { Baby, Droplet, Moon, Scale, Pill, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Baby, Droplet, Moon, Scale, Pill, Droplets, Trash2, Edit2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
-import { feedService, diaperService, sleepService, weightService, medicineService } from '../services/db';
+import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService } from '../services/db';
 import { useState } from 'react';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
@@ -98,7 +98,8 @@ export default function EventList({ events, onRefresh }) {
                   diaper: '/log-diaper',
                   sleep: '/log-sleep',
                   weight: '/log-weight',
-                  medicine: '/log-medicine'
+                  medicine: '/log-medicine',
+                  pumping: '/log-pumping'
                 };
                 navigate(`${routeMap[event.eventType]}?id=${event.id}`);
                 closeSwipe();
@@ -161,6 +162,8 @@ export default function EventList({ events, onRefresh }) {
             await weightService.deleteWeight(event.id);
           } else if (event.eventType === 'medicine') {
             await medicineService.deleteMedicine(event.id);
+          } else if (event.eventType === 'pumping') {
+            await pumpingService.deletePumping(event.id);
           }
 
           setToast({ message: 'Entry deleted successfully', type: 'success' });
@@ -265,6 +268,20 @@ export default function EventList({ events, onRefresh }) {
         newId = await medicineService.addMedicine(medicineData);
 
         eventDescription = `${event.name} - ${event.dose} ${event.unit}`;
+      } else if (event.eventType === 'pumping') {
+        const pumpingData = {
+          childId: event.childId,
+          timestamp: new Date(),
+          side: event.side,
+          duration: event.duration,
+          amount: event.amount,
+          unit: event.unit,
+          storageLocation: event.storageLocation,
+          notes: event.notes || ''
+        };
+        newId = await pumpingService.addPumping(pumpingData);
+
+        eventDescription = `Pumping (${event.side}) - ${event.amount} ${event.unit}`;
       }
 
       setToast({
@@ -284,6 +301,8 @@ export default function EventList({ events, onRefresh }) {
               await weightService.deleteWeight(newId);
             } else if (event.eventType === 'medicine') {
               await medicineService.deleteMedicine(newId);
+            } else if (event.eventType === 'pumping') {
+              await pumpingService.deletePumping(newId);
             }
             await onRefresh();
             setToast({ message: 'Repeat cancelled', type: 'info' });
@@ -596,6 +615,70 @@ export default function EventList({ events, onRefresh }) {
     );
   };
 
+  const renderPumpingEvent = (event) => {
+    return (
+      <SwipeableCard event={event} borderColor="border-cyan-400">
+      <div className="event-card border-cyan-400 border-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <Droplets className="w-5 h-5 text-cyan-500 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-gray-900">Pumping</span>
+                <span className="badge bg-cyan-100 text-cyan-700 capitalize">
+                  {event.side}
+                </span>
+                <span className="badge bg-cyan-100 text-cyan-700">
+                  {event.amount} {event.unit}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {event.duration && (
+                  <span className="badge badge-feed">{formatDuration(event.duration)}</span>
+                )}
+                {event.storageLocation && (
+                  <span className="badge badge-feed capitalize">
+                    {event.storageLocation === 'fed-immediately' ? 'Fed Now' : event.storageLocation}
+                  </span>
+                )}
+              </div>
+              {event.notes && (
+                <p className="text-sm text-gray-600 mt-1 break-words">{event.notes}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
+            </div>
+          </div>
+          <div className="hidden md:flex gap-1 items-center">
+            <button
+              onClick={() => handleRepeat(event)}
+              disabled={repeatingId === event.id}
+              className="p-2 text-gray-400 hover:text-green-500 active:scale-95 transition-all flex-shrink-0"
+              title="Repeat (log again now)"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => navigate(`/log-pumping?id=${event.id}`)}
+              className="p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+              title="Edit"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(event)}
+              disabled={deletingId === event.id}
+              className="p-2 text-gray-400 hover:text-red-500 active:scale-95 transition-all flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+      </SwipeableCard>
+    );
+  };
+
   return (
     <>
       <div className="space-y-3">
@@ -610,6 +693,8 @@ export default function EventList({ events, onRefresh }) {
             return <div key={`weight-${event.id}`}>{renderWeightEvent(event)}</div>;
           } else if (event.eventType === 'medicine') {
             return <div key={`medicine-${event.id}`}>{renderMedicineEvent(event)}</div>;
+          } else if (event.eventType === 'pumping') {
+            return <div key={`pumping-${event.id}`}>{renderPumpingEvent(event)}</div>;
           }
           return null;
         })}

@@ -30,6 +30,17 @@ db.version(3).stores({
   medicines: '++id, childId, timestamp, name, dose, unit, frequency, maxDailyDoses, notes'
 });
 
+// Version 4: Add pumping tracking
+db.version(4).stores({
+  child: '++id, name, dateOfBirth',
+  feeds: '++id, childId, timestamp, type, duration, amount, unit, notes',
+  diapers: '++id, childId, timestamp, type, wetness, consistency, color, quantity, notes',
+  sleep: '++id, childId, startTime, endTime, type, notes',
+  weight: '++id, childId, timestamp, weight, unit, notes',
+  medicines: '++id, childId, timestamp, name, dose, unit, frequency, maxDailyDoses, notes',
+  pumping: '++id, childId, timestamp, side, duration, amount, unit, storageLocation, notes'
+});
+
 // Child Profile Service
 export const childService = {
   async getChild() {
@@ -545,6 +556,87 @@ export const medicineService = {
   }
 };
 
+// Pumping Tracking Service
+export const pumpingService = {
+  async addPumping(pumpingData) {
+    return await db.pumping.add({
+      childId: pumpingData.childId || 1,
+      timestamp: pumpingData.timestamp || new Date(),
+      side: pumpingData.side, // 'left', 'right', 'both'
+      duration: pumpingData.duration || null, // in minutes
+      amount: pumpingData.amount, // numeric value
+      unit: pumpingData.unit || 'oz', // 'oz' or 'ml'
+      storageLocation: pumpingData.storageLocation || '', // 'fridge', 'freezer', 'fed-immediately'
+      notes: pumpingData.notes || '',
+      createdAt: new Date()
+    });
+  },
+
+  async getPumping(childId, startDate, endDate) {
+    let query = db.pumping.where('childId').equals(childId || 1);
+
+    if (startDate && endDate) {
+      return await query
+        .filter(pumping => pumping.timestamp >= startDate && pumping.timestamp <= endDate)
+        .reverse()
+        .sortBy('timestamp');
+    }
+
+    return await query.reverse().sortBy('timestamp');
+  },
+
+  async getTodayPumping(childId) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return await this.getPumping(childId, today, tomorrow);
+  },
+
+  async getLastPumping(childId) {
+    const pumpings = await db.pumping
+      .where('childId')
+      .equals(childId || 1)
+      .reverse()
+      .sortBy('timestamp');
+
+    return pumpings.length > 0 ? pumpings[0] : null;
+  },
+
+  async getPumpingById(id) {
+    return await db.pumping.get(id);
+  },
+
+  async deletePumping(id) {
+    return await db.pumping.delete(id);
+  },
+
+  async updatePumping(id, pumpingData) {
+    return await db.pumping.update(id, pumpingData);
+  },
+
+  // Get total pumped amount for a date range
+  async getTotalPumpedAmount(childId, startDate, endDate) {
+    const pumpings = await this.getPumping(childId, startDate, endDate);
+
+    const totalOz = pumpings.reduce((total, pumping) => {
+      let amount = pumping.amount || 0;
+      // Convert ml to oz if needed (1 oz = 29.5735 ml)
+      if (pumping.unit === 'ml') {
+        amount = amount / 29.5735;
+      }
+      return total + amount;
+    }, 0);
+
+    return {
+      totalOz: Math.round(totalOz * 10) / 10,
+      totalMl: Math.round(totalOz * 29.5735),
+      count: pumpings.length
+    };
+  }
+};
+
 // Stats Service for Dashboard
 export const statsService = {
   async getDailyStats(childId, date) {
@@ -558,6 +650,7 @@ export const statsService = {
     const sleeps = await sleepService.getSleep(childId, startDate, endDate);
     const weights = await weightService.getWeights(childId, startDate, endDate);
     const medicines = await medicineService.getMedicines(childId, startDate, endDate);
+    const pumpings = await pumpingService.getPumping(childId, startDate, endDate);
 
     // Calculate total sleep duration
     const totalSleepMinutes = sleeps.reduce((total, sleep) => {
@@ -572,6 +665,9 @@ export const statsService = {
     const wetDiapers = diapers.filter(d => d.type === 'wet' || d.type === 'both').length;
     const dirtyDiapers = diapers.filter(d => d.type === 'dirty' || d.type === 'both').length;
 
+    // Calculate total pumped
+    const totalPumped = await pumpingService.getTotalPumpedAmount(childId, startDate, endDate);
+
     return {
       totalFeeds: feeds.length,
       totalDiapers: diapers.length,
@@ -581,11 +677,14 @@ export const statsService = {
       totalSleepHours: (totalSleepMinutes / 60).toFixed(1),
       totalWeights: weights.length,
       totalMedicines: medicines.length,
+      totalPumpings: pumpings.length,
+      totalPumpedOz: totalPumped.totalOz,
       feeds,
       diapers,
       sleeps,
       weights,
-      medicines
+      medicines,
+      pumpings
     };
   },
 
@@ -595,6 +694,7 @@ export const statsService = {
     const sleeps = await sleepService.getSleep(childId, startDate, endDate);
     const weights = await weightService.getWeights(childId, startDate, endDate);
     const medicines = await medicineService.getMedicines(childId, startDate, endDate);
+    const pumpings = await pumpingService.getPumping(childId, startDate, endDate);
 
     // Collect all unique dates with activity
     const datesSet = new Set();
@@ -621,6 +721,11 @@ export const statsService = {
 
     medicines.forEach(m => {
       const dateStr = new Date(m.timestamp).toDateString();
+      datesSet.add(dateStr);
+    });
+
+    pumpings.forEach(p => {
+      const dateStr = new Date(p.timestamp).toDateString();
       datesSet.add(dateStr);
     });
 
