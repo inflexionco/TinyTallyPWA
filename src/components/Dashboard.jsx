@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService, insightsService } from '../services/db';
-import { formatTime, formatTimeAgo, formatDuration, getAgeInWeeks } from '../utils/dateUtils';
+import { formatTime, formatTimeAgo, formatDuration } from '../utils/dateUtils';
+import { getPreferences, formatAgeWithPreference } from '../utils/preferences';
 import EventList from './EventList';
 import Toast from './Toast';
 import BatchNightLogging from './BatchNightLogging';
@@ -301,7 +302,7 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
                 ) : (
                   <h1 className="text-xl font-bold truncate">{child.name}</h1>
                 )}
-                <p className="text-sm text-blue-100">{getAgeInWeeks(child.dateOfBirth)} old</p>
+                <p className="text-sm text-blue-100">{formatAgeWithPreference(child.dateOfBirth, getPreferences().ageFormat)} old</p>
               </div>
             </div>
             <div className="flex gap-2">

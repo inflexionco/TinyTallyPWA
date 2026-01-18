@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
-import { formatDate, formatTime, getAgeInWeeks } from '../utils/dateUtils';
+import { formatDate, formatTime } from '../utils/dateUtils';
+import { getPreferences, formatAgeWithPreference } from '../utils/preferences';
 import {
   feedService,
   diaperService,
@@ -56,7 +57,7 @@ export const pdfReportService = {
     yPos += 6;
     pdf.text(`Date of Birth: ${formatDate(child.dateOfBirth)}`, margin + 5, yPos);
     yPos += 6;
-    pdf.text(`Age: ${getAgeInWeeks(child.dateOfBirth)}`, margin + 5, yPos);
+    pdf.text(`Age: ${formatAgeWithPreference(child.dateOfBirth, getPreferences().ageFormat)}`, margin + 5, yPos);
     yPos += 10;
 
     // Report Period

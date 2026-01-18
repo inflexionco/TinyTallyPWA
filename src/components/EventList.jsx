@@ -2,6 +2,7 @@ import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, Trash2, Edit2, Refre
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService } from '../services/db';
+import { getPreferences, formatVolumeWithPreference } from '../utils/preferences';
 import { useState } from 'react';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
@@ -363,7 +364,7 @@ export default function EventList({ events, onRefresh }) {
                 <span className="badge badge-feed">
                   {event.duration
                     ? formatDuration(event.duration)
-                    : `${event.amount} ${event.unit}`}
+                    : formatVolumeWithPreference(event.amount, event.unit, getPreferences().volumeUnit)}
                 </span>
               </div>
               {event.notes && (
@@ -653,7 +654,7 @@ export default function EventList({ events, onRefresh }) {
                   {event.side}
                 </span>
                 <span className="badge bg-cyan-100 text-cyan-700">
-                  {event.amount} {event.unit}
+                  {formatVolumeWithPreference(event.amount, event.unit, getPreferences().volumeUnit)}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2 mt-1">

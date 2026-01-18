@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Baby, Database, Info, Sparkles, FileText, Upload, Download, QrCode, Share2 } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
 import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
 import { pdfReportService } from '../services/pdfReportService';
+import { getPreferences, updatePreference, formatAgeWithPreference } from '../utils/preferences';
 import QRCode from 'qrcode';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
@@ -39,6 +40,11 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
     includeAlerts: true,
     includeDetailedFeeding: false
   });
+  const [preferences, setPreferences] = useState(getPreferences());
+
+  useEffect(() => {
+    setPreferences(getPreferences());
+  }, []);
 
   const handleUpdateChild = async (e) => {
     e.preventDefault();
@@ -321,6 +327,12 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
     });
   };
 
+  const handlePreferenceChange = (key, value) => {
+    const updatedPrefs = updatePreference(key, value);
+    setPreferences(updatedPrefs);
+    setToast({ message: 'Preference updated', type: 'success' });
+  };
+
   return (
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
@@ -362,7 +374,7 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
               <div>
                 <div className="text-sm text-gray-500">Age</div>
                 <div className="text-lg font-medium text-gray-900">
-                  {getAgeInWeeks(child.dateOfBirth)}
+                  {formatAgeWithPreference(child.dateOfBirth, preferences.ageFormat)}
                 </div>
               </div>
               <button
@@ -429,6 +441,95 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           )}
         </div>
 
+        {/* Display Preferences */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="w-6 h-6 text-indigo-500" />
+            <h2 className="text-lg font-bold text-gray-900">Display Preferences</h2>
+          </div>
+
+          <div className="space-y-6">
+            {/* Age Format */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Age Display Format
+              </label>
+              <div className="space-y-2">
+                {[
+                  { value: 'auto', label: 'Auto (Smart)', description: 'Automatically selects the best format' },
+                  { value: 'days', label: 'Days', description: 'Always show in days' },
+                  { value: 'weeks', label: 'Weeks', description: 'Show weeks and days' },
+                  { value: 'months', label: 'Months', description: 'Show months and weeks' }
+                ].map(option => (
+                  <label
+                    key={option.value}
+                    className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      preferences.ageFormat === option.value
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-gray-200 bg-white hover:border-indigo-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="ageFormat"
+                      value={option.value}
+                      checked={preferences.ageFormat === option.value}
+                      onChange={(e) => handlePreferenceChange('ageFormat', e.target.value)}
+                      className="mt-1 w-4 h-4 text-indigo-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">{option.label}</div>
+                      <div className="text-xs text-gray-600">{option.description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-3 p-3 bg-indigo-50 rounded-lg text-xs text-gray-600">
+                <span className="font-medium">Preview: </span>
+                {formatAgeWithPreference(child.dateOfBirth, preferences.ageFormat)}
+              </div>
+            </div>
+
+            {/* Volume Unit */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Volume Unit
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: 'oz', label: 'Ounces (oz)', description: 'US standard' },
+                  { value: 'ml', label: 'Milliliters (ml)', description: 'Metric' }
+                ].map(option => (
+                  <label
+                    key={option.value}
+                    className={`flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      preferences.volumeUnit === option.value
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-gray-200 bg-white hover:border-indigo-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <input
+                        type="radio"
+                        name="volumeUnit"
+                        value={option.value}
+                        checked={preferences.volumeUnit === option.value}
+                        onChange={(e) => handlePreferenceChange('volumeUnit', e.target.value)}
+                        className="w-4 h-4 text-indigo-600"
+                      />
+                      <span className="font-semibold text-gray-900">{option.label}</span>
+                    </div>
+                    <div className="text-xs text-gray-600 ml-6">{option.description}</div>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-gray-600">
+                All volume measurements will be displayed in {preferences.volumeUnit === 'oz' ? 'ounces' : 'milliliters'}. Original data is preserved.
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Multi-Child Management */}
         {allChildren && allChildren.length > 1 && (
           <div className="card">
@@ -455,7 +556,7 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
                     <Baby className={`w-5 h-5 ${c.id === child.id ? 'text-green-500' : 'text-gray-400'}`} />
                     <div className="text-left">
                       <div className="font-semibold text-gray-900">{c.name}</div>
-                      <div className="text-sm text-gray-600">{getAgeInWeeks(c.dateOfBirth)}</div>
+                      <div className="text-sm text-gray-600">{formatAgeWithPreference(c.dateOfBirth, preferences.ageFormat)}</div>
                     </div>
                   </div>
                   {c.id === child.id && (
