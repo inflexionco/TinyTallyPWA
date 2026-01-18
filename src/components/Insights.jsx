@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, Info, CheckCircle, Droplet } from 'lucide-react';
 
 export default function Insights({ insights }) {
   if (!insights) return null;
@@ -215,7 +215,7 @@ export default function Insights({ insights }) {
       {insights.diaper && (
         <div className="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            💧 Diaper Pattern (Last 7 Days)
+            <Droplet className="w-4 h-4 text-green-600" /> Diaper Pattern (Last 7 Days)
           </h3>
 
           <div className="space-y-3">

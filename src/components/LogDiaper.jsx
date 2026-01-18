@@ -1,32 +1,43 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Droplet } from 'lucide-react';
+import { ArrowLeft, Clock, Droplet, Circle, Droplets, Waves, Wheat, Minus } from 'lucide-react';
 import { diaperService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputValidation';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
-// Visual indicators for stool characteristics
-const CONSISTENCY_ICONS = {
-  liquid: '💧',
-  soft: '🌊',
-  seedy: '🌾',
-  formed: '🥖',
-  hard: '🪨'
+// Icon component mapping for stool characteristics
+const ConsistencyIcon = ({ type, selected }) => {
+  const iconClass = `w-6 h-6 ${selected ? 'text-green-700' : 'text-gray-400'}`;
+  const icons = {
+    liquid: <Droplets className={iconClass} />,
+    soft: <Waves className={iconClass} />,
+    seedy: <Wheat className={iconClass} />,
+    formed: <Minus className={iconClass} />,
+    hard: <Circle className={`${iconClass} fill-current`} />
+  };
+  return icons[type] || icons.soft;
 };
 
-const COLOR_ICONS = {
-  yellow: '🟡',
-  green: '🟢',
-  brown: '🟤',
-  black: '⚫',
-  red: '🔴'
+const ColorCircle = ({ color, selected }) => {
+  const colorClasses = {
+    yellow: selected ? 'text-yellow-500 fill-yellow-500' : 'text-yellow-300 fill-yellow-300',
+    green: selected ? 'text-green-500 fill-green-500' : 'text-green-300 fill-green-300',
+    brown: selected ? 'text-amber-700 fill-amber-700' : 'text-amber-400 fill-amber-400',
+    black: selected ? 'text-gray-900 fill-gray-900' : 'text-gray-600 fill-gray-600',
+    red: selected ? 'text-red-500 fill-red-500' : 'text-red-300 fill-red-300'
+  };
+  return <Circle className={`w-8 h-8 ${colorClasses[color] || colorClasses.yellow}`} />;
 };
 
-const QUANTITY_ICONS = {
-  small: '○',
-  medium: '◉',
-  large: '⬤'
+const QuantityCircle = ({ size, selected }) => {
+  const sizeClasses = {
+    small: 'w-4 h-4',
+    medium: 'w-6 h-6',
+    large: 'w-8 h-8'
+  };
+  const colorClass = selected ? 'text-green-700 fill-green-700' : 'text-gray-400 fill-gray-400';
+  return <Circle className={`${sizeClasses[size] || sizeClasses.medium} ${colorClass}`} />;
 };
 
 export default function LogDiaper({ child }) {
@@ -240,35 +251,41 @@ export default function LogDiaper({ child }) {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'wet' })}
-                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                className={`p-4 rounded-xl border-2 font-medium transition-all flex flex-col items-center gap-2 ${
                   formData.type === 'wet'
                     ? 'border-green-500 bg-green-50 text-green-700'
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                💧 Wet
+                <Droplet className={`w-6 h-6 ${formData.type === 'wet' ? 'text-blue-500' : 'text-gray-400'}`} />
+                <span>Wet</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'dirty' })}
-                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                className={`p-4 rounded-xl border-2 font-medium transition-all flex flex-col items-center gap-2 ${
                   formData.type === 'dirty'
                     ? 'border-green-500 bg-green-50 text-green-700'
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                💩 Dirty
+                <Circle className={`w-6 h-6 ${formData.type === 'dirty' ? 'text-amber-700 fill-amber-700' : 'text-gray-400 fill-gray-400'}`} />
+                <span>Dirty</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'both' })}
-                className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                className={`p-4 rounded-xl border-2 font-medium transition-all flex flex-col items-center gap-2 ${
                   formData.type === 'both'
                     ? 'border-green-500 bg-green-50 text-green-700'
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                💧💩 Both
+                <div className="flex gap-1">
+                  <Droplet className={`w-5 h-5 ${formData.type === 'both' ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <Circle className={`w-5 h-5 ${formData.type === 'both' ? 'text-amber-700 fill-amber-700' : 'text-gray-400 fill-gray-400'}`} />
+                </div>
+                <span>Both</span>
               </button>
             </div>
           </div>
@@ -449,7 +466,7 @@ export default function LogDiaper({ child }) {
                       }`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-2xl">{CONSISTENCY_ICONS[cons]}</span>
+                        <ConsistencyIcon type={cons} selected={formData.consistency === cons} />
                         <span className="text-xs">{cons}</span>
                       </div>
                     </button>
@@ -475,7 +492,7 @@ export default function LogDiaper({ child }) {
                       }`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-2xl">{COLOR_ICONS[col]}</span>
+                        <ColorCircle color={col} selected={formData.color === col} />
                         <span className="text-xs">{col}</span>
                       </div>
                     </button>
@@ -501,7 +518,7 @@ export default function LogDiaper({ child }) {
                       }`}
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-2xl">{QUANTITY_ICONS[qty]}</span>
+                        <QuantityCircle size={qty} selected={formData.quantity === qty} />
                         <span className="text-xs">{qty}</span>
                       </div>
                     </button>

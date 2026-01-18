@@ -1,4 +1,4 @@
-import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService } from '../services/db';
@@ -7,27 +7,36 @@ import { useState } from 'react';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
-// Visual indicators for stool characteristics
-const CONSISTENCY_ICONS = {
-  liquid: '💧',
-  soft: '🌊',
-  seedy: '🌾',
-  formed: '🥖',
-  hard: '🪨'
+// Icon components for stool characteristics
+const ConsistencyIcon = ({ type, className = "w-4 h-4" }) => {
+  const icons = {
+    liquid: <Droplets className={className} />,
+    soft: <Waves className={className} />,
+    seedy: <Wheat className={className} />,
+    formed: <Minus className={className} />,
+    hard: <Circle className={`${className} fill-current`} />
+  };
+  return icons[type] || icons.soft;
 };
 
-const COLOR_ICONS = {
-  yellow: '🟡',
-  green: '🟢',
-  brown: '🟤',
-  black: '⚫',
-  red: '🔴'
+const ColorCircle = ({ color, className = "w-4 h-4" }) => {
+  const colorClasses = {
+    yellow: 'text-yellow-500 fill-yellow-500',
+    green: 'text-green-500 fill-green-500',
+    brown: 'text-amber-700 fill-amber-700',
+    black: 'text-gray-900 fill-gray-900',
+    red: 'text-red-500 fill-red-500'
+  };
+  return <Circle className={`${className} ${colorClasses[color] || colorClasses.yellow}`} />;
 };
 
-const QUANTITY_ICONS = {
-  small: '○',
-  medium: '◉',
-  large: '⬤'
+const QuantityCircle = ({ size, className = "fill-current" }) => {
+  const sizeClasses = {
+    small: 'w-3 h-3',
+    medium: 'w-4 h-4',
+    large: 'w-5 h-5'
+  };
+  return <Circle className={`${sizeClasses[size] || sizeClasses.medium} ${className}`} />;
 };
 
 export default function EventList({ events, onRefresh }) {
@@ -422,18 +431,18 @@ export default function EventList({ events, onRefresh }) {
                   <span className="badge badge-diaper capitalize">{event.wetness}</span>
                 )}
                 {event.consistency && (
-                  <span className="badge badge-diaper capitalize">
-                    {CONSISTENCY_ICONS[event.consistency]} {event.consistency}
+                  <span className="badge badge-diaper capitalize flex items-center gap-1">
+                    <ConsistencyIcon type={event.consistency} /> {event.consistency}
                   </span>
                 )}
                 {event.color && (
-                  <span className={`badge capitalize ${getStoolColorClasses(event.color)}`}>
-                    {COLOR_ICONS[event.color]} {event.color}
+                  <span className={`badge capitalize flex items-center gap-1 ${getStoolColorClasses(event.color)}`}>
+                    <ColorCircle color={event.color} /> {event.color}
                   </span>
                 )}
                 {event.quantity && (
-                  <span className="badge badge-diaper capitalize">
-                    {QUANTITY_ICONS[event.quantity]} {event.quantity}
+                  <span className="badge badge-diaper capitalize flex items-center gap-1">
+                    <QuantityCircle size={event.quantity} /> {event.quantity}
                   </span>
                 )}
               </div>
