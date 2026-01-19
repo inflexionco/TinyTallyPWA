@@ -1,4 +1,4 @@
-import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus } from 'lucide-react';
+import { Baby, Moon, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService } from '../services/db';
@@ -6,6 +6,32 @@ import { getPreferences, formatVolumeWithPreference } from '../utils/preferences
 import { useState } from 'react';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
+
+// Custom Diaper Icon Component
+const DiaperIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Main diaper body - rounded U shape */}
+    <path d="M4 6h16c1.1 0 2 .9 2 2v3c0 4-3 9-10 9S2 15 2 11V8c0-1.1.9-2 2-2z" />
+    {/* Waistband */}
+    <path d="M5 6h14" />
+    {/* Left tab */}
+    <rect x="2" y="7" width="2" height="3" rx="0.5" />
+    {/* Right tab */}
+    <rect x="20" y="7" width="2" height="3" rx="0.5" />
+    {/* Left leg opening curve */}
+    <path d="M6 14c1 2 2.5 3 4 3" />
+    {/* Right leg opening curve */}
+    <path d="M18 14c-1 2-2.5 3-4 3" />
+  </svg>
+);
 
 // Icon components for stool characteristics
 const ConsistencyIcon = ({ type, className = "w-4 h-4" }) => {
@@ -421,7 +447,7 @@ export default function EventList({ events, onRefresh }) {
       <div className="event-card border-green-400 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
-            <Droplet className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <DiaperIcon className="w-5 h-5 text-green-500 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-gray-900 capitalize">{typeLabel} Diaper</span>

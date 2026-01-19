@@ -1,4 +1,30 @@
-import { TrendingUp, TrendingDown, Minus, AlertTriangle, Info, CheckCircle, Droplet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+
+// Custom Diaper Icon Component
+const DiaperIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Main diaper body - rounded U shape */}
+    <path d="M4 6h16c1.1 0 2 .9 2 2v3c0 4-3 9-10 9S2 15 2 11V8c0-1.1.9-2 2-2z" />
+    {/* Waistband */}
+    <path d="M5 6h14" />
+    {/* Left tab */}
+    <rect x="2" y="7" width="2" height="3" rx="0.5" />
+    {/* Right tab */}
+    <rect x="20" y="7" width="2" height="3" rx="0.5" />
+    {/* Left leg opening curve */}
+    <path d="M6 14c1 2 2.5 3 4 3" />
+    {/* Right leg opening curve */}
+    <path d="M18 14c-1 2-2.5 3-4 3" />
+  </svg>
+);
 
 export default function Insights({ insights }) {
   if (!insights) return null;
@@ -215,7 +241,7 @@ export default function Insights({ insights }) {
       {insights.diaper && (
         <div className="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Droplet className="w-4 h-4 text-green-600" /> Diaper Pattern (Last 7 Days)
+            <DiaperIcon className="w-4 h-4 text-green-600" /> Diaper Pattern (Last 7 Days)
           </h3>
 
           <div className="space-y-3">

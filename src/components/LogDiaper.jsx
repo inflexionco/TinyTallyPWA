@@ -6,6 +6,32 @@ import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputVal
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
+// Custom Diaper Icon Component
+const DiaperIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Main diaper body - rounded U shape */}
+    <path d="M4 6h16c1.1 0 2 .9 2 2v3c0 4-3 9-10 9S2 15 2 11V8c0-1.1.9-2 2-2z" />
+    {/* Waistband */}
+    <path d="M5 6h14" />
+    {/* Left tab */}
+    <rect x="2" y="7" width="2" height="3" rx="0.5" />
+    {/* Right tab */}
+    <rect x="20" y="7" width="2" height="3" rx="0.5" />
+    {/* Left leg opening curve */}
+    <path d="M6 14c1 2 2.5 3 4 3" />
+    {/* Right leg opening curve */}
+    <path d="M18 14c-1 2-2.5 3-4 3" />
+  </svg>
+);
+
 // Icon component mapping for stool characteristics
 const ConsistencyIcon = ({ type, selected }) => {
   const iconClass = `w-6 h-6 ${selected ? 'text-green-700' : 'text-gray-400'}`;
@@ -218,7 +244,7 @@ export default function LogDiaper({ child }) {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-3">
-              <Droplet className="w-6 h-6" />
+              <DiaperIcon className="w-6 h-6" />
               <h1 className="text-xl font-bold">{editId ? 'Edit Diaper' : 'Log Diaper'}</h1>
             </div>
           </div>

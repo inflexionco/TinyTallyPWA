@@ -1,6 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Baby, Droplet, Moon, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
+import { Baby, Moon, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
+
+// Custom Diaper Icon Component
+const DiaperIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Main diaper body - rounded U shape */}
+    <path d="M4 6h16c1.1 0 2 .9 2 2v3c0 4-3 9-10 9S2 15 2 11V8c0-1.1.9-2 2-2z" />
+    {/* Waistband */}
+    <path d="M5 6h14" />
+    {/* Left tab */}
+    <rect x="2" y="7" width="2" height="3" rx="0.5" />
+    {/* Right tab */}
+    <rect x="20" y="7" width="2" height="3" rx="0.5" />
+    {/* Left leg opening curve */}
+    <path d="M6 14c1 2 2.5 3 4 3" />
+    {/* Right leg opening curve */}
+    <path d="M18 14c-1 2-2.5 3-4 3" />
+  </svg>
+);
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService, insightsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration } from '../utils/dateUtils';
 import { getPreferences, formatAgeWithPreference, getDashboardSections } from '../utils/preferences';
@@ -213,21 +239,21 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
                   onClick={() => handleQuickLogDiaper('wet')}
                   className="flex flex-col items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 rounded-xl transition-colors border-2 border-blue-200"
                 >
-                  <Droplet className="w-6 h-6 text-blue-500 mb-1" />
+                  <DiaperIcon className="w-6 h-6 text-blue-500 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Wet</span>
                 </button>
                 <button
                   onClick={() => handleQuickLogDiaper('dirty')}
                   className="flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 rounded-xl transition-colors border-2 border-amber-200"
                 >
-                  <Droplet className="w-6 h-6 text-amber-600 mb-1" />
+                  <DiaperIcon className="w-6 h-6 text-amber-600 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Dirty</span>
                 </button>
                 <button
                   onClick={() => handleQuickLogDiaper('both')}
                   className="flex flex-col items-center justify-center p-3 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-xl transition-colors border-2 border-green-200"
                 >
-                  <Droplet className="w-6 h-6 text-green-500 mb-1" />
+                  <DiaperIcon className="w-6 h-6 text-green-500 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Both</span>
                 </button>
               </div>
@@ -330,7 +356,7 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
                 onClick={() => navigate('/log-diaper')}
                 className="btn-quick-log"
               >
-                <Droplet className="w-8 h-8 text-green-500" />
+                <DiaperIcon className="w-8 h-8 text-green-500" />
                 <span className="text-sm font-semibold text-gray-700">Diaper</span>
               </button>
 
@@ -404,7 +430,7 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
             {lastDiaper && (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <div className="flex items-center gap-3">
-                  <Droplet className="w-5 h-5 text-green-500" />
+                  <DiaperIcon className="w-5 h-5 text-green-500" />
                   <div>
                     <div className="font-medium text-gray-900 capitalize">
                       {lastDiaper.type} Diaper
