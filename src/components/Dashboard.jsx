@@ -27,6 +27,71 @@ const DiaperIcon = ({ className }) => (
     <path d="M18 14c-1 2-2.5 3-4 3" />
   </svg>
 );
+
+// Custom Arrow Left Circle Icon (for left breast)
+const ArrowLeftCircle = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Circle */}
+    <circle cx="12" cy="12" r="10" />
+    {/* Arrow pointing left - centered with padding */}
+    <path d="M10 8l-4 4 4 4" />
+    <line x1="7" y1="12" x2="16" y2="12" />
+  </svg>
+);
+
+// Custom Arrow Right Circle Icon (for right breast)
+const ArrowRightCircle = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Circle */}
+    <circle cx="12" cy="12" r="10" />
+    {/* Arrow pointing right - centered with padding */}
+    <path d="M14 8l4 4-4 4" />
+    <line x1="17" y1="12" x2="8" y2="12" />
+  </svg>
+);
+
+// Custom Baby Bottle Icon
+const BottleIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Nipple/teat top - bigger rounded cap */}
+    <rect x="10" y="2" width="4" height="2.5" rx="2" />
+    {/* Nipple/teat body - much larger dome shape */}
+    <path d="M7 7c0-2.5 2-5 5-5s5 2.5 5 7" />
+    {/* Collar/ring - wider */}
+    <ellipse cx="12" cy="7.5" rx="6" ry="1.5" />
+    {/* Bottle body - wider and taller */}
+    <rect x="6.5" y="8.5" width="11" height="13" rx="2.5" />
+    {/* Measurement lines */}
+    <line x1="7" y1="14" x2="9" y2="14" />
+    <line x1="7" y1="17" x2="9" y2="17" />
+    <line x1="7" y1="20" x2="9" y2="20" />
+  </svg>
+);
+
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService, insightsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration } from '../utils/dateUtils';
 import { getPreferences, formatAgeWithPreference, getDashboardSections } from '../utils/preferences';
@@ -266,21 +331,21 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
                   onClick={() => handleQuickLogFeed('breastfeeding-left')}
                   className="flex flex-col items-center justify-center p-3 bg-pink-50 hover:bg-pink-100 active:bg-pink-200 rounded-xl transition-colors border-2 border-pink-200"
                 >
-                  <Baby className="w-6 h-6 text-pink-500 mb-1" />
+                  <ArrowLeftCircle className="w-6 h-6 text-pink-500 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Left</span>
                 </button>
                 <button
                   onClick={() => handleQuickLogFeed('breastfeeding-right')}
                   className="flex flex-col items-center justify-center p-3 bg-pink-50 hover:bg-pink-100 active:bg-pink-200 rounded-xl transition-colors border-2 border-pink-200"
                 >
-                  <Baby className="w-6 h-6 text-pink-500 mb-1" />
+                  <ArrowRightCircle className="w-6 h-6 text-pink-500 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Right</span>
                 </button>
                 <button
                   onClick={() => handleQuickLogFeed('formula')}
                   className="flex flex-col items-center justify-center p-3 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 rounded-xl transition-colors border-2 border-blue-200"
                 >
-                  <Baby className="w-6 h-6 text-blue-500 mb-1" />
+                  <BottleIcon className="w-7 h-7 text-blue-500 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Bottle</span>
                 </button>
               </div>
