@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Droplet, Circle, Droplets, Waves, Wheat, Minus } from 'lucide-react';
 import { diaperService } from '../services/db';
-import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputValidation';
+import { INPUT_LIMITS, sanitizeTextInput } from '../utils/inputValidation';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -29,6 +29,29 @@ const DiaperIcon = ({ className }) => (
     <path d="M6 14c1 2 2.5 3 4 3" />
     {/* Right leg opening curve */}
     <path d="M18 14c-1 2-2.5 3-4 3" />
+  </svg>
+);
+
+// Custom Poop Icon Component
+const PoopIcon = ({ className }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="none"
+  >
+    {/* Bottom layer - wide base */}
+    <path d="M4 18c0-1.5 1-2.5 2.5-3 1-.5 2-.5 3-.5h5c1 0 2 0 3 .5 1.5.5 2.5 1.5 2.5 3 0 1.5-1 2.5-2.5 3-1 .5-2 .5-3 .5h-5c-1 0-2 0-3-.5C5 20.5 4 19.5 4 18z" />
+    {/* Middle layer */}
+    <path d="M6.5 13.5c0-1.2.8-2 2-2.5.8-.3 1.5-.3 2.5-.3h2c1 0 1.7 0 2.5.3 1.2.5 2 1.3 2 2.5 0 1-.6 1.8-1.5 2.2-.7.3-1.5.3-2.5.3h-3c-1 0-1.8 0-2.5-.3-.9-.4-1.5-1.2-1.5-2.2z" />
+    {/* Top swirl */}
+    <path d="M9 9.5c0-1 .7-1.8 1.5-2 .5-.2 1-.2 1.5-.2.8 0 1.3.1 1.8.4.7.4 1.2 1.1 1.2 1.8 0 .6-.3 1.1-.8 1.4-.4.2-.9.3-1.5.3h-1.2c-.6 0-1.1-.1-1.5-.3-.6-.3-1-.8-1-1.4z" />
+    {/* Left eye */}
+    <circle cx="10" cy="16" r="1" fill="#000" />
+    {/* Right eye */}
+    <circle cx="14" cy="16" r="1" fill="#000" />
+    {/* Smile */}
+    <path d="M10 18.5c.5.5 1.2.8 2 .8s1.5-.3 2-.8" stroke="#000" strokeWidth="1" fill="none" strokeLinecap="round" />
   </svg>
 );
 
@@ -295,7 +318,7 @@ export default function LogDiaper({ child }) {
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                <Circle className={`w-6 h-6 ${formData.type === 'dirty' ? 'text-amber-700 fill-amber-700' : 'text-gray-400 fill-gray-400'}`} />
+                <PoopIcon className={`w-7 h-7 ${formData.type === 'dirty' ? 'text-amber-700' : 'text-gray-400'}`} />
                 <span>Dirty</span>
               </button>
               <button
@@ -307,9 +330,9 @@ export default function LogDiaper({ child }) {
                     : 'border-gray-200 bg-white text-gray-700'
                 }`}
               >
-                <div className="flex gap-1">
-                  <Droplet className={`w-5 h-5 ${formData.type === 'both' ? 'text-blue-500' : 'text-gray-400'}`} />
-                  <Circle className={`w-5 h-5 ${formData.type === 'both' ? 'text-amber-700 fill-amber-700' : 'text-gray-400 fill-gray-400'}`} />
+                <div className="flex gap-1 items-center">
+                  <Droplet className={`w-6 h-6 ${formData.type === 'both' ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <PoopIcon className={`w-6 h-6 ${formData.type === 'both' ? 'text-amber-700' : 'text-gray-400'}`} />
                 </div>
                 <span>Both</span>
               </button>
