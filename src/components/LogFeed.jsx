@@ -6,8 +6,7 @@ import {
   INPUT_LIMITS,
   sanitizeTextInput,
   parsePositiveInt,
-  parsePositiveFloat,
-  isFutureDate
+  parsePositiveFloat
 } from '../utils/inputValidation';
 import Toast from './Toast';
 
