@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Baby, Database, Info, Sparkles, FileText, Upload, Download, QrCode, Share2 } from 'lucide-react';
+import { ArrowLeft, Baby, Database, Info, Sparkles, FileText, Upload, Download, QrCode, Share2, Layout, ChevronUp, ChevronDown, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { childService, db } from '../services/db';
 import { getAgeInWeeks, formatDate } from '../utils/dateUtils';
 import { sanitizeName, isValidDate, isFutureDate, INPUT_LIMITS } from '../utils/inputValidation';
 import { pdfReportService } from '../services/pdfReportService';
-import { getPreferences, updatePreference, formatAgeWithPreference } from '../utils/preferences';
+import { getPreferences, updatePreference, formatAgeWithPreference, getDashboardSections, toggleDashboardSection, moveDashboardSection, resetDashboardSections } from '../utils/preferences';
 import QRCode from 'qrcode';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
@@ -41,10 +41,17 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
     includeDetailedFeeding: false
   });
   const [preferences, setPreferences] = useState(getPreferences());
+  const [dashboardSections, setDashboardSections] = useState([]);
 
   useEffect(() => {
     setPreferences(getPreferences());
+    loadDashboardSections();
   }, []);
+
+  const loadDashboardSections = () => {
+    const sections = getDashboardSections();
+    setDashboardSections(sections.sort((a, b) => a.order - b.order));
+  };
 
   const handleUpdateChild = async (e) => {
     e.preventDefault();
@@ -333,6 +340,35 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
     setToast({ message: 'Preference updated', type: 'success' });
   };
 
+  const handleToggleSection = (sectionId) => {
+    toggleDashboardSection(sectionId);
+    loadDashboardSections();
+    setToast({ message: 'Section visibility updated', type: 'success' });
+  };
+
+  const handleMoveSection = (sectionId, direction) => {
+    moveDashboardSection(sectionId, direction);
+    loadDashboardSections();
+    setToast({ message: 'Section order updated', type: 'success' });
+  };
+
+  const handleResetSections = () => {
+    setConfirmDialog({
+      title: 'Reset Home Page Layout?',
+      message: 'This will restore the default home page layout with all sections visible in their original order.',
+      confirmText: 'Reset Layout',
+      cancelText: 'Cancel',
+      variant: 'warning',
+      onConfirm: () => {
+        setConfirmDialog(null);
+        resetDashboardSections();
+        loadDashboardSections();
+        setToast({ message: 'Home page layout reset to default', type: 'success' });
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
+
   return (
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
@@ -527,6 +563,98 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
                 All volume measurements will be displayed in {preferences.volumeUnit === 'oz' ? 'ounces' : 'milliliters'}. Original data is preserved.
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Home Page Layout Customization */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <Layout className="w-6 h-6 text-purple-500" />
+            <h2 className="text-lg font-bold text-gray-900">Home Page Layout</h2>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Customize your home page by showing/hiding sections and changing their order.
+            </p>
+
+            <div className="space-y-2">
+              {dashboardSections.map((section, index) => (
+                <div
+                  key={section.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                    section.enabled
+                      ? 'border-purple-200 bg-purple-50'
+                      : 'border-gray-200 bg-gray-50 opacity-60'
+                  }`}
+                >
+                  {/* Toggle Visibility */}
+                  <button
+                    onClick={() => handleToggleSection(section.id)}
+                    className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                    title={section.enabled ? 'Hide section' : 'Show section'}
+                  >
+                    {section.enabled ? (
+                      <Eye className="w-5 h-5 text-purple-600" />
+                    ) : (
+                      <EyeOff className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+
+                  {/* Section Label */}
+                  <div className="flex-1">
+                    <div className={`font-semibold ${section.enabled ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {section.label}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {section.enabled ? 'Visible' : 'Hidden'}
+                    </div>
+                  </div>
+
+                  {/* Move Up/Down */}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => handleMoveSection(section.id, 'up')}
+                      disabled={index === 0}
+                      className={`p-1 rounded transition-colors ${
+                        index === 0
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-purple-600 hover:bg-white/50'
+                      }`}
+                      title="Move up"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleMoveSection(section.id, 'down')}
+                      disabled={index === dashboardSections.length - 1}
+                      className={`p-1 rounded transition-colors ${
+                        index === dashboardSections.length - 1
+                          ? 'text-gray-300 cursor-not-allowed'
+                          : 'text-purple-600 hover:bg-white/50'
+                      }`}
+                      title="Move down"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Reset Button */}
+            <button
+              onClick={handleResetSections}
+              className="w-full mt-4 flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:from-gray-100 hover:to-gray-200 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Reset to Default Layout
+            </button>
+          </div>
+
+          <div className="p-3 bg-purple-50 rounded-lg text-xs text-gray-600">
+            <p className="font-medium mb-1">Tip:</p>
+            <p>Hide sections you don&apos;t use to create a cleaner home page. Reorder sections by priority to see the most important information first.</p>
           </div>
         </div>
 

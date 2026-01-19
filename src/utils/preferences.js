@@ -2,9 +2,20 @@
 
 const PREFERENCES_KEY = 'userPreferences';
 
+const DEFAULT_DASHBOARD_SECTIONS = [
+  { id: 'insights', label: 'Health Insights & Patterns', enabled: true, order: 0 },
+  { id: 'feedingSuggestion', label: 'Feeding Suggestion', enabled: true, order: 1 },
+  { id: 'feedingPattern', label: 'Feeding Pattern', enabled: true, order: 2 },
+  { id: 'quickActions', label: 'Quick Actions', enabled: true, order: 3 },
+  { id: 'detailedForms', label: 'Detailed Forms', enabled: true, order: 4 },
+  { id: 'lastActivity', label: 'Last Activity Summary', enabled: true, order: 5 },
+  { id: 'todaysActivity', label: 'Today\'s Activity', enabled: true, order: 6 }
+];
+
 const DEFAULT_PREFERENCES = {
   ageFormat: 'auto', // 'auto', 'days', 'weeks', 'months'
-  volumeUnit: 'oz'   // 'oz', 'ml'
+  volumeUnit: 'oz',  // 'oz', 'ml'
+  dashboardSections: DEFAULT_DASHBOARD_SECTIONS
 };
 
 export const getPreferences = () => {
@@ -140,4 +151,52 @@ export const convertVolume = (value, fromUnit, toUnit) => {
 export const formatVolumeWithPreference = (value, originalUnit, preferredUnit) => {
   const converted = convertVolume(value, originalUnit, preferredUnit);
   return `${converted} ${preferredUnit}`;
+};
+
+// Dashboard section management
+export const getDashboardSections = () => {
+  const prefs = getPreferences();
+  return prefs.dashboardSections || DEFAULT_DASHBOARD_SECTIONS;
+};
+
+export const updateDashboardSections = (sections) => {
+  const preferences = getPreferences();
+  preferences.dashboardSections = sections;
+  savePreferences(preferences);
+  return preferences;
+};
+
+export const toggleDashboardSection = (sectionId) => {
+  const sections = getDashboardSections();
+  const updatedSections = sections.map(section =>
+    section.id === sectionId
+      ? { ...section, enabled: !section.enabled }
+      : section
+  );
+  return updateDashboardSections(updatedSections);
+};
+
+export const moveDashboardSection = (sectionId, direction) => {
+  const sections = [...getDashboardSections()];
+  const index = sections.findIndex(s => s.id === sectionId);
+
+  if (index === -1) return sections;
+
+  const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+  if (newIndex < 0 || newIndex >= sections.length) return sections;
+
+  // Swap the sections
+  [sections[index], sections[newIndex]] = [sections[newIndex], sections[index]];
+
+  // Update order values
+  sections.forEach((section, idx) => {
+    section.order = idx;
+  });
+
+  return updateDashboardSections(sections);
+};
+
+export const resetDashboardSections = () => {
+  return updateDashboardSections([...DEFAULT_DASHBOARD_SECTIONS]);
 };
