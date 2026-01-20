@@ -20,7 +20,7 @@ export default function LogMedicine({ child }) {
   const [timeMode, setTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
   const [recentMinutes, setRecentMinutes] = useState(0);
   const [detailedMode, setDetailedMode] = useState(false);
-  const [isCustomMedicine, setIsCustomMedicine] = useState(false);
+  const [isCustomMedicine, setIsCustomMedicine] = useState(true);
   const [safetyWarnings, setSafetyWarnings] = useState(null);
   const [nextDoseTime, setNextDoseTime] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -255,9 +255,9 @@ export default function LogMedicine({ child }) {
                     setIsCustomMedicine(false);
                     setFormData({ ...formData, name: '' });
                   }}
-                  className="text-sm text-gray-600 hover:text-gray-800"
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
                 >
-                  ← Back to common medicines
+                  Choose from common medicines →
                 </button>
               </div>
             )}
