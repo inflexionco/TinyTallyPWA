@@ -5,6 +5,28 @@ import { sleepService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput, isFutureDate, isValidTimeRange } from '../utils/inputValidation';
 import Toast from './Toast';
 
+// Helper function to get current local time in datetime-local format
+const getCurrentLocalDateTime = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Helper function to convert Date to local datetime-local format
+const toLocalDateTime = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 export default function LogSleep({ child }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -12,8 +34,8 @@ export default function LogSleep({ child }) {
   const [activeSleep, setActiveSleep] = useState(null);
   const [formData, setFormData] = useState({
     type: 'nap',
-    startTime: new Date().toISOString().slice(0, 16),
-    endTime: new Date().toISOString().slice(0, 16),
+    startTime: getCurrentLocalDateTime(),
+    endTime: '',
     notes: ''
   });
   const [startTimeMode, setStartTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
@@ -68,8 +90,8 @@ export default function LogSleep({ child }) {
       if (sleep) {
         setFormData({
           type: sleep.type,
-          startTime: new Date(sleep.startTime).toISOString().slice(0, 16),
-          endTime: sleep.endTime ? new Date(sleep.endTime).toISOString().slice(0, 16) : '',
+          startTime: toLocalDateTime(sleep.startTime),
+          endTime: sleep.endTime ? toLocalDateTime(sleep.endTime) : '',
           notes: sleep.notes || ''
         });
         // When editing, show custom time mode and detailed mode
@@ -482,7 +504,7 @@ export default function LogSleep({ child }) {
                       value={formData.startTime}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                       className="input-field"
-                      max={new Date().toISOString().slice(0, 16)}
+                      max={getCurrentLocalDateTime()}
                       required
                     />
                     <button
@@ -612,8 +634,8 @@ export default function LogSleep({ child }) {
                       value={formData.endTime}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                       className="input-field"
-                      min={formData.startTime}
-                      max={new Date().toISOString().slice(0, 16)}
+                      min={formData.startTime || undefined}
+                      max={getCurrentLocalDateTime()}
                       required
                     />
                     <button

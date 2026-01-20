@@ -5,13 +5,35 @@ import { tummyTimeService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput } from '../utils/inputValidation';
 import Toast from './Toast';
 
+// Helper function to get current local time in datetime-local format
+const getCurrentLocalDateTime = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Helper function to convert Date to local datetime-local format
+const toLocalDateTime = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 export default function LogTummyTime({ child }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('id');
   const [formData, setFormData] = useState({
-    startTime: new Date().toISOString().slice(0, 16),
-    endTime: new Date().toISOString().slice(0, 16),
+    startTime: getCurrentLocalDateTime(),
+    endTime: '',
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,8 +52,8 @@ export default function LogTummyTime({ child }) {
       const tummyTime = await tummyTimeService.getTummyTimeById(parseInt(editId));
       if (tummyTime) {
         setFormData({
-          startTime: new Date(tummyTime.startTime).toISOString().slice(0, 16),
-          endTime: tummyTime.endTime ? new Date(tummyTime.endTime).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+          startTime: toLocalDateTime(tummyTime.startTime),
+          endTime: tummyTime.endTime ? toLocalDateTime(tummyTime.endTime) : getCurrentLocalDateTime(),
           notes: tummyTime.notes || ''
         });
       }
@@ -161,7 +183,7 @@ export default function LogTummyTime({ child }) {
               value={formData.startTime}
               onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
               className="input-field"
-              max={new Date().toISOString().slice(0, 16)}
+              max={getCurrentLocalDateTime()}
               required
             />
           </div>
@@ -177,8 +199,8 @@ export default function LogTummyTime({ child }) {
               value={formData.endTime}
               onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
               className="input-field"
-              min={formData.startTime}
-              max={new Date().toISOString().slice(0, 16)}
+              min={formData.startTime || undefined}
+              max={getCurrentLocalDateTime()}
               required
             />
           </div>
