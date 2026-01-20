@@ -22,7 +22,23 @@ export const getPreferences = () => {
   try {
     const stored = localStorage.getItem(PREFERENCES_KEY);
     if (stored) {
-      return { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) };
+      const preferences = JSON.parse(stored);
+
+      // Validate dashboard sections - reset if corrupted
+      if (preferences.dashboardSections) {
+        const hasQuickActions = preferences.dashboardSections.some(s => s.id === 'quickActions');
+        const hasDetailedForms = preferences.dashboardSections.some(s => s.id === 'detailedForms');
+        const hasLogActivity = preferences.dashboardSections.some(s => s.id === 'logActivity');
+
+        // If we find logActivity (from reverted changes) or missing expected sections, reset
+        if (hasLogActivity || !hasQuickActions || !hasDetailedForms) {
+          console.log('Corrupted dashboard preferences detected, resetting to defaults');
+          preferences.dashboardSections = DEFAULT_DASHBOARD_SECTIONS;
+          savePreferences(preferences);
+        }
+      }
+
+      return { ...DEFAULT_PREFERENCES, ...preferences };
     }
   } catch (error) {
     console.error('Error loading preferences:', error);
