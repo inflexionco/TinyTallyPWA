@@ -119,6 +119,14 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
   const [insights, setInsights] = useState(null);
   const [showInsights, setShowInsights] = useState(true);
   const [dashboardSections, setDashboardSections] = useState([]);
+  const [detailedFormsCollapsed, setDetailedFormsCollapsed] = useState(() => {
+    try {
+      const stored = localStorage.getItem('detailedFormsCollapsed');
+      return stored === 'true'; // Default: collapsed
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     loadDashboardData();
@@ -140,6 +148,16 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
   const getSectionOrder = (sectionId) => {
     const section = dashboardSections.find(s => s.id === sectionId);
     return section ? section.order : 999; // Default to end if not found
+  };
+
+  const toggleDetailedForms = () => {
+    const newState = !detailedFormsCollapsed;
+    setDetailedFormsCollapsed(newState);
+    try {
+      localStorage.setItem('detailedFormsCollapsed', String(newState));
+    } catch (error) {
+      console.error('Failed to save detailed forms state:', error);
+    }
   };
 
   // Function to get all dashboard sections as renderable components
@@ -394,9 +412,13 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
             </div>
 
             <div className="mt-3 pt-3 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center">
-                Need more options? Use detailed forms below
-              </p>
+              <button
+                type="button"
+                onClick={toggleDetailedForms}
+                className="w-full text-xs text-blue-600 hover:text-blue-700 font-medium text-center py-2 hover:bg-blue-50 rounded transition-colors"
+              >
+                {detailedFormsCollapsed ? '+ Show detailed forms' : '- Hide detailed forms'}
+              </button>
             </div>
           </div>
         )
@@ -941,7 +963,13 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
       <div className="container-safe py-6">
         {/* Render sections dynamically based on preferences */}
         {dashboardSections.length > 0 && getAllSections()
-          .filter(section => isSectionEnabled(section.id))
+          .filter(section => {
+            // Hide detailed forms section if collapsed
+            if (section.id === 'detailedForms' && detailedFormsCollapsed) {
+              return false;
+            }
+            return isSectionEnabled(section.id);
+          })
           .sort((a, b) => getSectionOrder(a.id) - getSectionOrder(b.id))
           .map(section => (
             <div key={section.id}>
