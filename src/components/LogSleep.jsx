@@ -612,6 +612,7 @@ export default function LogSleep({ child }) {
                       value={formData.endTime}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                       className="input-field"
+                      min={formData.startTime}
                       max={new Date().toISOString().slice(0, 16)}
                       required
                     />
