@@ -388,7 +388,7 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
       </div>
 
       <div className="container-safe py-6 space-y-4">
-        {/* ========== FREQUENTLY USED ========== */}
+        {/* ========== CHILD & PROFILE MANAGEMENT ========== */}
 
         {/* Child Profile */}
         <div className="card">
@@ -517,6 +517,39 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           </div>
         )}
 
+        {/* Add Another Child */}
+        <div className="card">
+          <button
+            onClick={() => setShowAddChild(true)}
+            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl active:scale-95 transition-transform"
+          >
+            <Baby className="w-5 h-5 text-green-500" />
+            <span className="font-semibold text-gray-900">Add Another Child</span>
+          </button>
+
+          {allChildren && allChildren.length > 1 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Manage Profiles
+              </label>
+              {allChildren.map(c => (
+                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                  <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                  <button
+                    onClick={() => handleDeleteChild(c)}
+                    className="text-xs text-red-600 hover:text-red-800 font-medium"
+                    disabled={allChildren.length === 1}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ========== DISPLAY & LAYOUT ========== */}
+
         {/* Display Preferences */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
@@ -605,8 +638,6 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
             </div>
           </div>
         </div>
-
-        {/* ========== MODERATE USE ========== */}
 
         {/* Home Page Layout Customization */}
         <div className="card">
@@ -700,6 +731,8 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           </div>
         </div>
 
+        {/* ========== MEDICAL & REPORTS ========== */}
+
         {/* Tracking & Growth */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
@@ -743,6 +776,8 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
             <ArrowLeft className="w-5 h-5 text-indigo-500 rotate-180" />
           </button>
         </div>
+
+        {/* ========== SHARING & COLLABORATION ========== */}
 
         {/* Partner Sync & Data Sharing */}
         <div className="card">
@@ -798,38 +833,7 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           </div>
         </div>
 
-        {/* ========== OCCASIONAL USE ========== */}
-
-        {/* Add Another Child */}
-        <div className="card">
-          <button
-            onClick={() => setShowAddChild(true)}
-            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl active:scale-95 transition-transform"
-          >
-            <Baby className="w-5 h-5 text-green-500" />
-            <span className="font-semibold text-gray-900">Add Another Child</span>
-          </button>
-
-          {allChildren && allChildren.length > 1 && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Manage Profiles
-              </label>
-              {allChildren.map(c => (
-                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-                  <span className="text-sm font-medium text-gray-900">{c.name}</span>
-                  <button
-                    onClick={() => handleDeleteChild(c)}
-                    className="text-xs text-red-600 hover:text-red-800 font-medium"
-                    disabled={allChildren.length === 1}
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* ========== SYSTEM ========== */}
 
         {/* Data Management */}
         <div className="card">
