@@ -94,7 +94,7 @@
   .container-safe {
     @apply max-w-lg mx-auto px-4 pb-20;
     padding-top: env(safe-area-inset-top);
-    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+    padding-bottom: calc(env(safe-area-inset-bottom));
     width: 100%;
     overflow-x: hidden;
   }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Droplet, Circle, Droplets, Waves, Wheat, Minus } from 'lucide-react';
 import { diaperService } from '../services/db';
-import { INPUT_LIMITS, sanitizeTextInput } from '../utils/inputValidation';
+import { INPUT_LIMITS, sanitizeTextInput, isFutureDate } from '../utils/inputValidation';
 import Toast from './Toast';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -36,7 +36,7 @@ const DiaperIcon = ({ className }) => (
 const PoopIcon = ({ className }) => (
   <svg
     className={className}
-    viewBox="0 0 24 24"
+    viewBox="0 0 22 22"
     fill="currentColor"
     stroke="none"
   >
@@ -258,8 +258,8 @@ export default function LogDiaper({ child }) {
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-500 to-green-600 text-white safe-top">
-        <div className="container-safe pt-4 pb-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="container-safe pt-6 pb-6">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/')}
               className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform"

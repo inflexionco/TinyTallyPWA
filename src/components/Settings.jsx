@@ -373,8 +373,8 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white safe-top">
-        <div className="container-safe pt-4 pb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="container-safe pt-8 pb-8">
+          <div className="flex items-center justify-between">
             <button
               onClick={() => navigate('/')}
               className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform"

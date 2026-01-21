@@ -171,8 +171,8 @@ export default function LogMedicine({ child }) {
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-red-500 to-red-600 text-white safe-top">
-        <div className="container-safe pt-4 pb-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="container-safe pt-6 pb-6">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/')}
               className="p-2 bg-white/20 rounded-full active:scale-95 transition-transform"
