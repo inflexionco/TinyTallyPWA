@@ -33,7 +33,7 @@ export default function LogTummyTime({ child }) {
   const editId = searchParams.get('id');
   const [formData, setFormData] = useState({
     startTime: getCurrentLocalDateTime(),
-    endTime: '',
+    endTime: getCurrentLocalDateTime(),
     notes: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);

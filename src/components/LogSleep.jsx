@@ -35,7 +35,7 @@ export default function LogSleep({ child }) {
   const [formData, setFormData] = useState({
     type: 'nap',
     startTime: getCurrentLocalDateTime(),
-    endTime: '',
+    endTime: getCurrentLocalDateTime(),
     notes: ''
   });
   const [startTimeMode, setStartTimeMode] = useState('now'); // 'now' | 'recent' | 'custom'
