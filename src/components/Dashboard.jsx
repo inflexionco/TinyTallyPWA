@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Baby, Moon, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
+import { Baby, Moon, Sun, Scale, Pill, Droplets, Timer, History, Settings, RefreshCw } from 'lucide-react';
 
 // Custom Diaper Icon Component
 const DiaperIcon = ({ className }) => (
@@ -427,7 +427,7 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
                   onClick={() => handleQuickLogSleep('nap')}
                   className="flex flex-col items-center justify-center p-3 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 rounded-xl transition-colors border-2 border-purple-200"
                 >
-                  <Moon className="w-6 h-6 text-purple-500 mb-1" />
+                  <Sun className="w-6 h-6 text-purple-500 mb-1" />
                   <span className="text-xs font-semibold text-gray-700">Start Nap</span>
                 </button>
                 <button
@@ -571,7 +571,11 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
             {(lastSleep || activeSleep) && (
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-3">
-                  <Moon className="w-5 h-5 text-purple-500" />
+                  {(activeSleep || lastSleep).type === 'nap' ? (
+                    <Sun className="w-5 h-5 text-purple-500" />
+                  ) : (
+                    <Moon className="w-5 h-5 text-purple-500" />
+                  )}
                   <div>
                     <div className="font-medium text-gray-900">
                       {getSleepTypeLabel((activeSleep || lastSleep).type)}

@@ -1,4 +1,4 @@
-import { Baby, Moon, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus } from 'lucide-react';
+import { Baby, Moon, Sun, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService } from '../services/db';
@@ -521,7 +521,11 @@ export default function EventList({ events, onRefresh }) {
       <div className="event-card border-purple-400 border-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
-            <Moon className="w-5 h-5 text-purple-500 flex-shrink-0" />
+            {event.type === 'nap' ? (
+              <Sun className="w-5 h-5 text-purple-500 flex-shrink-0" />
+            ) : (
+              <Moon className="w-5 h-5 text-purple-500 flex-shrink-0" />
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-gray-900">{typeLabel}</span>
