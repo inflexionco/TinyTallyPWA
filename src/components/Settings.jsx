@@ -388,6 +388,8 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
       </div>
 
       <div className="container-safe py-6 space-y-4">
+        {/* ========== CHILD & PROFILE MANAGEMENT ========== */}
+
         {/* Child Profile */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
@@ -476,6 +478,77 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
             </form>
           )}
         </div>
+
+        {/* Multi-Child Management - Switch Child */}
+        {allChildren && allChildren.length > 1 && (
+          <div className="card">
+            <div className="flex items-center gap-3 mb-4">
+              <Baby className="w-6 h-6 text-green-500" />
+              <h2 className="text-lg font-bold text-gray-900">Switch Child</h2>
+            </div>
+
+            <div className="space-y-2">
+              {allChildren.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    onSwitchChild(c.id);
+                    setToast({ message: `Switched to ${c.name}`, type: 'success' });
+                  }}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+                    c.id === child.id
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 bg-white hover:border-green-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Baby className={`w-5 h-5 ${c.id === child.id ? 'text-green-500' : 'text-gray-400'}`} />
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">{c.name}</div>
+                      <div className="text-sm text-gray-600">{formatAgeWithPreference(c.dateOfBirth, preferences.ageFormat)}</div>
+                    </div>
+                  </div>
+                  {c.id === child.id && (
+                    <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Add Another Child */}
+        <div className="card">
+          <button
+            onClick={() => setShowAddChild(true)}
+            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl active:scale-95 transition-transform"
+          >
+            <Baby className="w-5 h-5 text-green-500" />
+            <span className="font-semibold text-gray-900">Add Another Child</span>
+          </button>
+
+          {allChildren && allChildren.length > 1 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Manage Profiles
+              </label>
+              {allChildren.map(c => (
+                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                  <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                  <button
+                    onClick={() => handleDeleteChild(c)}
+                    className="text-xs text-red-600 hover:text-red-800 font-medium"
+                    disabled={allChildren.length === 1}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ========== DISPLAY & LAYOUT ========== */}
 
         {/* Display Preferences */}
         <div className="card">
@@ -658,74 +731,7 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           </div>
         </div>
 
-        {/* Multi-Child Management */}
-        {allChildren && allChildren.length > 1 && (
-          <div className="card">
-            <div className="flex items-center gap-3 mb-4">
-              <Baby className="w-6 h-6 text-green-500" />
-              <h2 className="text-lg font-bold text-gray-900">Switch Child</h2>
-            </div>
-
-            <div className="space-y-2">
-              {allChildren.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    onSwitchChild(c.id);
-                    setToast({ message: `Switched to ${c.name}`, type: 'success' });
-                  }}
-                  className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                    c.id === child.id
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 bg-white hover:border-green-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Baby className={`w-5 h-5 ${c.id === child.id ? 'text-green-500' : 'text-gray-400'}`} />
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">{c.name}</div>
-                      <div className="text-sm text-gray-600">{formatAgeWithPreference(c.dateOfBirth, preferences.ageFormat)}</div>
-                    </div>
-                  </div>
-                  {c.id === child.id && (
-                    <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Add Another Child */}
-        <div className="card">
-          <button
-            onClick={() => setShowAddChild(true)}
-            className="w-full flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl active:scale-95 transition-transform"
-          >
-            <Baby className="w-5 h-5 text-green-500" />
-            <span className="font-semibold text-gray-900">Add Another Child</span>
-          </button>
-
-          {allChildren && allChildren.length > 1 && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Manage Profiles
-              </label>
-              {allChildren.map(c => (
-                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-                  <span className="text-sm font-medium text-gray-900">{c.name}</span>
-                  <button
-                    onClick={() => handleDeleteChild(c)}
-                    className="text-xs text-red-600 hover:text-red-800 font-medium"
-                    disabled={allChildren.length === 1}
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* ========== MEDICAL & REPORTS ========== */}
 
         {/* Tracking & Growth */}
         <div className="card">
@@ -770,6 +776,8 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
             <ArrowLeft className="w-5 h-5 text-indigo-500 rotate-180" />
           </button>
         </div>
+
+        {/* ========== SHARING & COLLABORATION ========== */}
 
         {/* Partner Sync & Data Sharing */}
         <div className="card">
@@ -824,6 +832,8 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
             </ol>
           </div>
         </div>
+
+        {/* ========== SYSTEM ========== */}
 
         {/* Data Management */}
         <div className="card">
