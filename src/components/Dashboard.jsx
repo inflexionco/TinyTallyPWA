@@ -425,17 +425,33 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handleQuickLogSleep('nap')}
-                  className="flex flex-col items-center justify-center p-3 bg-purple-50 hover:bg-purple-100 active:bg-purple-200 rounded-xl transition-colors border-2 border-purple-200"
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl transition-colors border-2 ${
+                    activeSleep && activeSleep.type === 'nap'
+                      ? 'bg-green-50 hover:bg-green-100 active:bg-green-200 border-green-500'
+                      : 'bg-purple-50 hover:bg-purple-100 active:bg-purple-200 border-purple-200'
+                  }`}
                 >
-                  <Sun className="w-6 h-6 text-purple-500 mb-1" />
-                  <span className="text-xs font-semibold text-gray-700">Start Nap</span>
+                  <Sun className={`w-6 h-6 mb-1 ${
+                    activeSleep && activeSleep.type === 'nap' ? 'text-green-600' : 'text-purple-500'
+                  }`} />
+                  <span className="text-xs font-semibold text-gray-700">
+                    {activeSleep && activeSleep.type === 'nap' ? 'Stop Nap' : 'Start Nap'}
+                  </span>
                 </button>
                 <button
                   onClick={() => handleQuickLogSleep('night')}
-                  className="flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 rounded-xl transition-colors border-2 border-indigo-200"
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl transition-colors border-2 ${
+                    activeSleep && activeSleep.type === 'night'
+                      ? 'bg-green-50 hover:bg-green-100 active:bg-green-200 border-green-500'
+                      : 'bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 border-indigo-200'
+                  }`}
                 >
-                  <Moon className="w-6 h-6 text-indigo-600 mb-1" />
-                  <span className="text-xs font-semibold text-gray-700">Start Sleep</span>
+                  <Moon className={`w-6 h-6 mb-1 ${
+                    activeSleep && activeSleep.type === 'night' ? 'text-green-600' : 'text-indigo-600'
+                  }`} />
+                  <span className="text-xs font-semibold text-gray-700">
+                    {activeSleep && activeSleep.type === 'night' ? 'Stop Sleep' : 'Start Sleep'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -887,12 +903,27 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
 
   const handleQuickLogSleep = async (type) => {
     try {
-      // Check if there's already an active sleep
-      if (activeSleep) {
-        setToast({ message: 'Sleep tracking already in progress', type: 'info' });
+      const typeLabel = type === 'nap' ? 'Nap' : 'Night sleep';
+
+      // If there's an active sleep of the same type, stop it
+      if (activeSleep && activeSleep.type === type) {
+        await sleepService.endSleep(activeSleep.id, new Date());
+        setToast({
+          message: `${typeLabel} ended`,
+          type: 'success'
+        });
+        await loadDashboardData();
         return;
       }
 
+      // If there's an active sleep of a different type, warn the user
+      if (activeSleep && activeSleep.type !== type) {
+        const currentTypeLabel = activeSleep.type === 'nap' ? 'Nap' : 'Night sleep';
+        setToast({ message: `${currentTypeLabel} tracking already in progress. Stop it first.`, type: 'info' });
+        return;
+      }
+
+      // Start new sleep tracking
       const sleepData = {
         childId: child.id,
         startTime: new Date(),
@@ -904,7 +935,6 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
       const id = await sleepService.addSleep(sleepData);
       setLastQuickLogId({ type: 'sleep', id });
 
-      const typeLabel = type === 'nap' ? 'Nap' : 'Night sleep';
       setToast({
         message: `${typeLabel} tracking started`,
         type: 'success',
