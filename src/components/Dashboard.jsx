@@ -94,7 +94,7 @@ const BottleIcon = ({ className }) => (
 
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService, statsService, insightsService } from '../services/db';
 import { formatTime, formatTimeAgo, formatDuration } from '../utils/dateUtils';
-import { getPreferences, formatAgeWithPreference, getDashboardSections } from '../utils/preferences';
+import { getPreferences, formatAgeWithPreference, getDashboardSections, toggleDashboardSection } from '../utils/preferences';
 import EventList from './EventList';
 import Toast from './Toast';
 import BatchNightLogging from './BatchNightLogging';
@@ -135,6 +135,24 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child]);
 
+  // Sync collapsed state with section enabled state
+  useEffect(() => {
+    const detailedFormsSection = dashboardSections.find(s => s.id === 'detailedForms');
+    if (detailedFormsSection) {
+      // If section is disabled in settings, should be collapsed on dashboard
+      // If section is enabled in settings, should be expanded on dashboard
+      const shouldBeCollapsed = !detailedFormsSection.enabled;
+      if (shouldBeCollapsed !== detailedFormsCollapsed) {
+        setDetailedFormsCollapsed(shouldBeCollapsed);
+        try {
+          localStorage.setItem('detailedFormsCollapsed', String(shouldBeCollapsed));
+        } catch (error) {
+          console.error('Failed to save detailed forms state:', error);
+        }
+      }
+    }
+  }, [dashboardSections, detailedFormsCollapsed]);
+
   const loadDashboardSections = () => {
     const sections = getDashboardSections();
     setDashboardSections(sections.sort((a, b) => a.order - b.order));
@@ -153,10 +171,21 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
   const toggleDetailedForms = () => {
     const newState = !detailedFormsCollapsed;
     setDetailedFormsCollapsed(newState);
+
+    // Update localStorage
     try {
       localStorage.setItem('detailedFormsCollapsed', String(newState));
     } catch (error) {
       console.error('Failed to save detailed forms state:', error);
+    }
+
+    // Sync with settings: when collapsed=true, disable the section; when collapsed=false, enable it
+    const sections = getDashboardSections();
+    const detailedFormsSection = sections.find(s => s.id === 'detailedForms');
+    if (detailedFormsSection && detailedFormsSection.enabled === newState) {
+      // Need to toggle: if collapsed (newState=true), we want enabled=false
+      toggleDashboardSection('detailedForms');
+      loadDashboardSections();
     }
   };
 
