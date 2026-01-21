@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Moon } from 'lucide-react';
+import { ArrowLeft, Clock, Moon, Sun } from 'lucide-react';
 import { sleepService } from '../services/db';
 import { INPUT_LIMITS, sanitizeTextInput, isFutureDate, isValidTimeRange } from '../utils/inputValidation';
 import Toast from './Toast';
@@ -32,8 +32,15 @@ export default function LogSleep({ child }) {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('id');
   const [activeSleep, setActiveSleep] = useState(null);
+
+  // Smart default: nap during day (6 AM - 7 PM), night sleep otherwise
+  const getDefaultSleepType = () => {
+    const hour = new Date().getHours();
+    return (hour >= 6 && hour < 19) ? 'nap' : 'night';
+  };
+
   const [formData, setFormData] = useState({
-    type: 'nap',
+    type: getDefaultSleepType(),
     startTime: getCurrentLocalDateTime(),
     endTime: getCurrentLocalDateTime(),
     notes: ''
@@ -259,7 +266,11 @@ export default function LogSleep({ child }) {
           <div className="card">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Moon className="w-6 h-6 text-purple-600" />
+                {activeSleep.type === 'nap' ? (
+                  <Sun className="w-6 h-6 text-purple-600" />
+                ) : (
+                  <Moon className="w-6 h-6 text-purple-600" />
+                )}
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Sleep in Progress</h2>
@@ -290,23 +301,25 @@ export default function LogSleep({ child }) {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, type: 'nap' })}
-                  className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                  className={`p-4 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
                     formData.type === 'nap'
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-gray-200 bg-white text-gray-700'
                   }`}
                 >
+                  <Sun className="w-5 h-5" />
                   Nap
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, type: 'night' })}
-                  className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                  className={`p-4 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
                     formData.type === 'night'
                       ? 'border-purple-500 bg-purple-50 text-purple-700'
                       : 'border-gray-200 bg-white text-gray-700'
                   }`}
                 >
+                  <Moon className="w-5 h-5" />
                   Night Sleep
                 </button>
               </div>
@@ -367,23 +380,25 @@ export default function LogSleep({ child }) {
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, type: 'nap' })}
-                    className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                    className={`p-4 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
                       formData.type === 'nap'
                         ? 'border-purple-500 bg-purple-50 text-purple-700'
                         : 'border-gray-200 bg-white text-gray-700'
                     }`}
                   >
+                    <Sun className="w-5 h-5" />
                     Nap
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, type: 'night' })}
-                    className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                    className={`p-4 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
                       formData.type === 'night'
                         ? 'border-purple-500 bg-purple-50 text-purple-700'
                         : 'border-gray-200 bg-white text-gray-700'
                     }`}
                   >
+                    <Moon className="w-5 h-5" />
                     Night Sleep
                   </button>
                 </div>
