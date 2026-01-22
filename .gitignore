@@ -39,3 +39,6 @@ dist
 sw.js
 workbox-*.js
 dev-sw.js
+
+# Claude Code
+.claude/
