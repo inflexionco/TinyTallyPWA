@@ -230,11 +230,52 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
           await db.diapers.clear();
           await db.sleep.clear();
           await db.weight.clear();
+          await db.medicines.clear();
+          await db.pumping.clear();
+          await db.tummyTime.clear();
+          await db.milestones.clear();
           setToast({ message: 'All activity data has been cleared.', type: 'success' });
           setTimeout(() => navigate('/'), 1500);
         } catch (error) {
           console.error('Error clearing data:', error);
           setToast({ message: 'Failed to clear data. Please try again.', type: 'error' });
+        }
+      },
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
+
+  const handleResetApp = async () => {
+    setConfirmDialog({
+      title: 'Reset Entire App?',
+      message: 'This will permanently delete ALL data including child profiles, activities, milestones - everything! You will return to the welcome screen. This action cannot be undone!',
+      confirmText: 'Reset Everything',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          // Clear all data tables
+          await db.feeds.clear();
+          await db.diapers.clear();
+          await db.sleep.clear();
+          await db.weight.clear();
+          await db.medicines.clear();
+          await db.pumping.clear();
+          await db.tummyTime.clear();
+          await db.milestones.clear();
+          await db.child.clear();
+
+          // Clear localStorage
+          localStorage.clear();
+
+          setToast({ message: 'App has been reset completely.', type: 'success' });
+
+          // Reload the page to return to welcome screen
+          setTimeout(() => window.location.href = '/', 1500);
+        } catch (error) {
+          console.error('Error resetting app:', error);
+          setToast({ message: 'Failed to reset app. Please try again.', type: 'error' });
         }
       },
       onCancel: () => setConfirmDialog(null)
@@ -847,11 +888,26 @@ export default function Settings({ child, allChildren, onChildUpdated, onChildCr
               onClick={handleClearAllData}
               className="w-full py-3 px-6 rounded-xl border-2 border-red-200 text-red-600 font-semibold active:scale-95 transition-transform"
             >
-              Clear All Data
+              Clear All Activity Data
+            </button>
+
+            <button
+              onClick={handleResetApp}
+              className="w-full py-3 px-6 rounded-xl bg-red-600 text-white font-semibold active:scale-95 transition-transform"
+            >
+              Reset Entire App
             </button>
           </div>
 
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-600">
+          <div className="mt-4 p-3 bg-amber-50 border-2 border-amber-200 rounded-lg text-sm text-gray-600">
+            <p className="font-medium mb-2">Warning:</p>
+            <ul className="text-xs space-y-1 list-disc list-inside">
+              <li><strong>Clear All Activity Data:</strong> Removes logs but keeps child profiles</li>
+              <li><strong>Reset Entire App:</strong> Deletes everything including profiles (returns to welcome screen)</li>
+            </ul>
+          </div>
+
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm text-gray-600">
             <p className="font-medium mb-1">About Data Storage</p>
             <p>All your data is stored locally on this device using IndexedDB. Data is only shared when you explicitly export/import.</p>
           </div>
