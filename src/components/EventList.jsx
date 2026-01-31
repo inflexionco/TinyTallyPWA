@@ -1,4 +1,4 @@
-import { Baby, Moon, Sun, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus } from 'lucide-react';
+import { Baby, Moon, Sun, Scale, Pill, Droplets, Timer, Trash2, Edit2, RefreshCw, Circle, Waves, Wheat, Minus, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatTime, formatDuration, calculateDuration } from '../utils/dateUtils';
 import { feedService, diaperService, sleepService, weightService, medicineService, pumpingService, tummyTimeService } from '../services/db';
@@ -74,6 +74,7 @@ export default function EventList({ events, onRefresh }) {
   const [swipedEventId, setSwipedEventId] = useState(null);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+  const [touchStartY, setTouchStartY] = useState(null);
 
   const getStoolColorClasses = (color) => {
     const colorMap = {
@@ -92,30 +93,57 @@ export default function EventList({ events, onRefresh }) {
   const onTouchStart = (e, eventId) => {
     setTouchEnd(null); // Reset touch end
     setTouchStart(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
   };
 
   const onTouchMove = (e, eventId) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    if (!touchStart || !touchStartY) return;
+
+    const touchCurrent = e.targetTouches[0].clientX;
+    const touchCurrentY = e.targetTouches[0].clientY;
+    const diffX = Math.abs(touchStart - touchCurrent);
+    const diffY = Math.abs(touchStartY - touchCurrentY);
+
+    // If moving horizontally more than vertically, prevent default scrolling
+    if (diffX > diffY && diffX > 5) {
+      e.preventDefault();
+    }
+
+    setTouchEnd(touchCurrent);
   };
 
   const onTouchEnd = (e, eventId) => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || !touchStartY) return;
 
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+    const distanceX = touchStart - touchEnd;
+    const distanceY = touchStartY - (e.changedTouches[0]?.clientY || touchStartY);
 
-    if (isLeftSwipe) {
-      // Swipe left - show actions
-      setSwipedEventId(eventId);
-    } else if (isRightSwipe) {
-      // Swipe right - close actions
-      setSwipedEventId(null);
+    // Only register as swipe if horizontal movement is greater than vertical
+    if (Math.abs(distanceX) > Math.abs(distanceY) && Math.abs(distanceX) > minSwipeDistance) {
+      const isLeftSwipe = distanceX > 0;
+      const isRightSwipe = distanceX < 0;
+
+      if (isLeftSwipe) {
+        // Swipe left - show actions
+        setSwipedEventId(eventId);
+      } else if (isRightSwipe) {
+        // Swipe right - close actions
+        setSwipedEventId(null);
+      }
     }
   };
 
   const closeSwipe = () => {
     setSwipedEventId(null);
+  };
+
+  // Toggle swipe state on tap (fallback for when swipe doesn't work)
+  const toggleSwipe = (eventId) => {
+    if (swipedEventId === eventId) {
+      setSwipedEventId(null);
+    } else {
+      setSwipedEventId(eventId);
+    }
   };
 
   // Wrapper for swipeable event cards
@@ -126,37 +154,48 @@ export default function EventList({ events, onRefresh }) {
       <div className="relative overflow-hidden rounded-xl">
         {/* Action buttons background - shown when swiped */}
         {isSwiped && (
-          <div className="absolute inset-0 bg-gradient-to-l from-red-500 to-blue-500 flex items-center justify-end gap-2 px-4">
-            <button
-              onClick={() => {
-                const routeMap = {
-                  feed: '/log-feed',
-                  diaper: '/log-diaper',
-                  sleep: '/log-sleep',
-                  weight: '/log-weight',
-                  medicine: '/log-medicine',
-                  pumping: '/log-pumping',
-                  tummyTime: '/log-tummy-time'
-                };
-                navigate(`${routeMap[event.eventType]}?id=${event.id}`);
-                closeSwipe();
-              }}
-              className="p-3 bg-blue-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform"
-              title="Edit"
-            >
-              <Edit2 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => {
-                handleDelete(event);
-                closeSwipe();
-              }}
-              disabled={deletingId === event.id}
-              className="p-3 bg-red-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform"
-              title="Delete"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+          <div
+            className="absolute inset-0 bg-gradient-to-l from-red-500 to-blue-500 flex items-center justify-between px-4 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeSwipe();
+            }}
+          >
+            <span className="text-white text-sm opacity-75">Tap to close</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const routeMap = {
+                    feed: '/log-feed',
+                    diaper: '/log-diaper',
+                    sleep: '/log-sleep',
+                    weight: '/log-weight',
+                    medicine: '/log-medicine',
+                    pumping: '/log-pumping',
+                    tummyTime: '/log-tummy-time'
+                  };
+                  navigate(`${routeMap[event.eventType]}?id=${event.id}`);
+                  closeSwipe();
+                }}
+                className="p-3 bg-blue-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform z-20"
+                title="Edit"
+              >
+                <Edit2 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(event);
+                  closeSwipe();
+                }}
+                disabled={deletingId === event.id}
+                className="p-3 bg-red-600 text-white rounded-lg shadow-lg active:scale-95 transition-transform z-20"
+                title="Delete"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -169,7 +208,13 @@ export default function EventList({ events, onRefresh }) {
           className={`${borderColor} transition-transform duration-200 ease-out ${
             isSwiped ? '-translate-x-32' : 'translate-x-0'
           }`}
-          style={{ touchAction: 'pan-y' }}
+          style={{
+            touchAction: 'manipulation',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+            cursor: 'grab'
+          }}
         >
           {children}
         </div>
@@ -408,6 +453,19 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
@@ -478,6 +536,19 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
@@ -544,6 +615,19 @@ export default function EventList({ events, onRefresh }) {
               </p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             {event.endTime && (
               <button
@@ -597,6 +681,19 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
@@ -648,6 +745,19 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
@@ -712,6 +822,19 @@ export default function EventList({ events, onRefresh }) {
               <p className="text-xs text-gray-500 mt-1">{formatTime(event.timestamp)}</p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             <button
               onClick={() => handleRepeat(event)}
@@ -772,6 +895,19 @@ export default function EventList({ events, onRefresh }) {
               </p>
             </div>
           </div>
+          {/* Mobile: Three-dot menu button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSwipe(event.id);
+            }}
+            className="md:hidden p-2 text-gray-400 hover:text-blue-500 active:scale-95 transition-all flex-shrink-0"
+            title="Options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+
+          {/* Desktop: Action buttons */}
           <div className="hidden md:flex gap-1 items-center">
             {event.endTime && (
               <button

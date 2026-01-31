@@ -63,13 +63,17 @@
   }
 
   /* Fix for iOS datetime picker overflow */
-  input[type="datetime-local"] {
+  input[type="datetime-local"],
+  input[type="date"] {
     max-width: 100%;
     -webkit-appearance: none;
+    box-sizing: border-box;
   }
 
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  input[type="date"]::-webkit-calendar-picker-indicator {
     margin-left: auto;
+    flex-shrink: 0;
   }
 
   .select-field {
