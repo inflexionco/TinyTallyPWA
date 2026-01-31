@@ -194,7 +194,7 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
     const sections = [
       {
         id: 'insights',
-        component: insights && (insights.alerts?.length > 0 || insights.patterns?.length > 0 || insights.recommendations?.length > 0) && (
+        component: insights && (insights.alerts?.length > 0 || insights.feeding || insights.sleep || insights.diaper) && (
           <>
             {showInsights && (
               <div className="mb-6">

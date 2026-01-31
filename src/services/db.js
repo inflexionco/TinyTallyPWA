@@ -975,6 +975,27 @@ export const insightsService = {
       sleepService.getSleep(childId, startDate, endDate)
     ]);
 
+    // Check if we have at least 24 hours of data
+    const allEntries = [
+      ...feeds.map(f => f.timestamp),
+      ...diapers.map(d => d.timestamp),
+      ...sleeps.map(s => s.startTime)
+    ];
+
+    if (allEntries.length === 0) {
+      return { feeding: null, sleep: null, diaper: null, alerts: [] };
+    }
+
+    // Find the oldest entry
+    const oldestEntryTime = new Date(Math.min(...allEntries.map(t => new Date(t).getTime())));
+    const now = new Date();
+    const hoursSinceOldest = (now - oldestEntryTime) / (1000 * 60 * 60);
+
+    // Require at least 24 hours of monitoring before showing insights
+    if (hoursSinceOldest < 24) {
+      return { feeding: null, sleep: null, diaper: null, alerts: [] };
+    }
+
     const insights = {
       feeding: this.analyzeFeedingPattern(feeds, days),
       sleep: this.analyzeSleepPattern(sleeps, days),
