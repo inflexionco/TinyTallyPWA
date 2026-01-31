@@ -194,9 +194,9 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
     const sections = [
       {
         id: 'insights',
-        component: (
+        component: insights && (insights.alerts?.length > 0 || insights.patterns?.length > 0 || insights.recommendations?.length > 0) && (
           <>
-            {showInsights && insights && (
+            {showInsights && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold text-gray-900">Insights & Patterns</h2>
@@ -532,6 +532,13 @@ export default function Dashboard({ child, allChildren, onSwitchChild }) {
         component: (
           <div className="card mb-6 space-y-3">
             <h2 className="text-lg font-semibold text-gray-900 mb-3">Last Activity</h2>
+
+            {!lastFeed && !lastDiaper && !lastSleep && !activeSleep && !lastWeight && !lastMedicine && (
+              <div className="text-center py-6">
+                <p className="text-gray-500">No activity logged yet</p>
+                <p className="text-sm text-gray-400 mt-1">Start tracking with the quick log buttons above</p>
+              </div>
+            )}
 
             {lastFeed && (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
